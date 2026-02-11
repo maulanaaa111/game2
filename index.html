@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dark Data Broker | Insider Trade Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&display=swap');
+        body { font-family: 'Fira Code', monospace; background-color: #050505; color: #00ff41; overflow-x: hidden; }
+        .matrix-card { background: rgba(10, 10, 10, 0.9); border: 1px solid #00ff4133; box-shadow: 0 0 15px rgba(0, 255, 65, 0.05); }
+        .matrix-card:hover { border-color: #00ff41; }
+        .scanline { background: linear-gradient(to bottom, transparent 50%, rgba(0, 255, 65, 0.02) 50%); background-size: 100% 4px; pointer-events: none; position: fixed; inset: 0; z-index: 100; }
+        .insider-flash { animation: blink 0.5s step-end infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: #00ff41; }
+        .buy-btn { background: rgba(0, 255, 65, 0.1); border: 1px solid #00ff41; color: #00ff41; }
+        .buy-btn:hover { background: #00ff41; color: #000; }
+        .sell-btn { background: rgba(255, 0, 60, 0.1); border: 1px solid #ff003c; color: #ff003c; }
+        .sell-btn:hover { background: #ff003c; color: #fff; }
+        .preparing-mode { color: #f2ff00; text-shadow: 0 0 10px #f2ff0055; border-color: #f2ff00 !important; }
+        
+        .ticker-wrap { width: 100%; overflow: hidden; background: #0a0a0a; border-top: 1px solid #00ff4133; position: fixed; bottom: 0; left: 0; height: 30px; display: flex; align-items: center; z-index: 50; }
+        .ticker-move { display: inline-block; white-space: nowrap; padding-right: 100%; animation: ticker 40s linear infinite; }
+        @keyframes ticker { 0% { transform: translate3d(0, 0, 0); } 100% { transform: translate3d(-100%, 0, 0); } }
+
+        .progress-bar { height: 4px; background: #111; position: relative; overflow: hidden; }
+        .progress-fill { height: 100%; background: #00ff41; transition: width 0.5s ease; box-shadow: 0 0 10px #00ff41; }
+        .locked-agent { filter: grayscale(1) opacity(0.5); pointer-events: none; position: relative; }
+        .locked-badge { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #ff003c; color: white; padding: 2px 6px; font-size: 8px; border-radius: 2px; }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 pb-16">
+    <div class="scanline"></div>
+
+    <!-- Terminal Overlay for Intel -->
+    <div id="intel-modal" class="fixed inset-0 z-[100] flex items-center justify-center hidden bg-black/90 p-4">
+        <div class="matrix-card max-w-md w-full p-6 border-2 border-[#00ff41] shadow-[0_0_30px_#00ff4133]">
+            <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+                <span class="insider-flash">⚠️</span> CLASSIFIED INTEL
+            </h2>
+            <p id="intel-text" class="text-sm mb-6 text-gray-300"></p>
+            <div class="grid grid-cols-2 gap-4 mb-6">
+                <div class="bg-black/50 p-3 rounded border border-[#00ff4133]">
+                    <p class="text-[10px] uppercase text-gray-500 mb-1">Impact Prediction</p>
+                    <p id="intel-impact" class="font-bold text-lg">???</p>
+                </div>
+                <div class="bg-black/50 p-3 rounded border border-[#00ff4133]">
+                    <p class="text-[10px] uppercase text-gray-500 mb-1">Est. Duration</p>
+                    <p id="intel-duration" class="font-bold text-lg text-blue-400">---</p>
+                </div>
+            </div>
+            <button onclick="closeIntel()" class="w-full bg-[#00ff41] text-black font-bold py-3 hover:bg-[#00cc33] transition-all uppercase">Acknowledged</button>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto space-y-6">
+        <!-- TOP NAV -->
+        <div class="matrix-card p-4 rounded-lg overflow-hidden relative">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-2">
+                <div>
+                    <h1 class="text-xl font-bold tracking-tighter uppercase">Dark_Data_Broker v2.5</h1>
+                    <p class="text-[10px] text-[#00ff41] opacity-50">USER_LVL: <span id="level-display">1</span> [<span id="rank-display">Novice</span>]</p>
+                </div>
+                <div class="flex gap-8">
+                    <div class="text-right">
+                        <p class="text-[10px] uppercase opacity-50">Crypto Balance</p>
+                        <p id="balance" class="text-xl font-bold tabular-nums">10,000.00</p>
+                    </div>
+                </div>
+            </div>
+            <div class="progress-bar">
+                <div id="level-progress" class="progress-fill" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <!-- LEFT: INTEL AGENTS -->
+            <div class="lg:col-span-1 space-y-4">
+                <h2 class="text-xs font-bold uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-red-500 rounded-full"></span> Intelligence Bureau
+                </h2>
+                <div id="agent-list" class="space-y-3">
+                    <!-- Injected via JS -->
+                </div>
+                <div class="matrix-card p-4 rounded-lg text-[10px] space-y-2 opacity-70">
+                    <p class="font-bold text-[#00ff41]">SYSTEM LOGS:</p>
+                    <div id="log-console" class="h-24 overflow-y-auto space-y-1 text-[#00ff41]">
+                        <div>> Network established.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CENTER: MARKET DATA -->
+            <div class="lg:col-span-2 space-y-6">
+                <div id="chart-container" class="matrix-card rounded-lg p-6 h-[400px] relative transition-colors duration-300">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h3 id="active-asset-name" class="text-xl font-bold uppercase tracking-wide">---</h3>
+                            <div id="price-tag" class="text-3xl font-bold tabular-nums">0.00</div>
+                        </div>
+                        <div class="flex flex-col items-end gap-2">
+                            <div id="insider-alert" class="hidden flex items-center gap-2 bg-red-900/30 text-red-500 px-3 py-1 rounded border border-red-500/50 text-[10px] font-bold">
+                                <span class="insider-flash">●</span> LIVE LEAK
+                            </div>
+                            <div id="prep-timer" class="hidden flex flex-col items-end gap-2">
+                                <div class="bg-yellow-900/30 text-yellow-500 px-3 py-1 rounded border border-yellow-500/50 text-[10px] font-bold">
+                                    <span class="animate-pulse">⏳</span> PREPARING: <span id="countdown-val">5</span>s
+                                </div>
+                                <button onclick="buyTimeReduction()" class="text-[8px] bg-yellow-500 text-black px-2 py-1 rounded hover:bg-yellow-400 font-bold uppercase">
+                                    Bypass Wait (-2s) - $500
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="h-[280px]">
+                        <canvas id="mainChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="matrix-card rounded-lg p-4">
+                        <div class="flex justify-between items-end mb-2">
+                            <p class="text-[10px] uppercase opacity-50">Units to Trade</p>
+                            <p id="max-lot-label" class="text-[9px] text-gray-500 uppercase">Max: 0</p>
+                        </div>
+                        <input id="trade-amount" type="number" value="10" class="w-full bg-black border border-[#00ff4133] rounded p-2 mb-4 outline-none focus:border-[#00ff41] text-[#00ff41]">
+                        <div class="flex gap-2">
+                            <button onclick="executeOrder('BUY')" class="flex-1 buy-btn py-3 font-bold text-xs uppercase transition-all rounded">Open Buy</button>
+                            <button onclick="executeOrder('SELL')" class="flex-1 sell-btn py-3 font-bold text-xs uppercase transition-all rounded">Open Sell</button>
+                        </div>
+                    </div>
+                    <div class="matrix-card rounded-lg p-4">
+                        <p class="text-[10px] uppercase opacity-50 mb-2">Active Portfolio</p>
+                        <div id="portfolio-list" class="space-y-2 max-h-32 overflow-y-auto text-xs">
+                            <!-- Injected -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT: ASSET LIST -->
+            <div class="lg:col-span-1 space-y-4">
+                <h2 class="text-xs font-bold uppercase tracking-widest mb-4">Available Streams</h2>
+                <div id="market-list" class="space-y-2 max-h-[600px] overflow-y-auto pr-1">
+                    <!-- Injected -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NEWS TICKER -->
+    <div class="ticker-wrap">
+        <div class="ticker-move text-[10px] uppercase" id="news-ticker">
+            LOADING GLOBAL INTEL... | SYSTEM STATUS: OPERATIONAL | FBI TRACKING: DISABLED | NODES CONNECTED: 1,024
+        </div>
+    </div>
+
+    <script>
+        const assets = [
+            { id: 'leaked_emails', name: 'Email_DB', price: 150, trend: [], color: '#00ff41', momentumTicks: 0, momentumDir: 0 },
+            { id: 'gov_secrets', name: 'Gov_Intel', price: 450, trend: [], color: '#ff003c', momentumTicks: 0, momentumDir: 0 },
+            { id: 'biometric', name: 'Bio_Stats', price: 280, trend: [], color: '#00d4ff', momentumTicks: 0, momentumDir: 0 },
+            { id: 'crypto_keys', name: 'Crypto_Keys', price: 80, trend: [], color: '#f2ff00', momentumTicks: 0, momentumDir: 0 },
+            { id: 'mainframe', name: 'Mainframe_Access', price: 1200, trend: [], color: '#ff00ff', momentumTicks: 0, momentumDir: 0 }
+        ];
+
+        const agents = [
+            { id: 'hacker', name: 'Script_Kiddie', cost: 500, intelQuality: 0.3, cooldown: 15000, lastUse: 0, reqLevel: 1 },
+            { id: 'spy', name: 'Network_Infiltrator', cost: 2500, intelQuality: 0.7, cooldown: 30000, lastUse: 0, reqLevel: 3 },
+            { id: 'whistle', name: 'Whistleblower', cost: 8000, intelQuality: 0.95, cooldown: 60000, lastUse: 0, reqLevel: 5 }
+        ];
+
+        const newsPool = [
+            "FBI shutting down node in Eastern Europe...",
+            "Cryptocurrency flash crash predicted by botnets...",
+            "Massive database of government emails leaked on underground forum...",
+            "Quantum computer decryption keys found in abandoned server...",
+            "Mainframe security protocols updated: Trading volatility increases..."
+        ];
+
+        let userBalance = 10000;
+        let userPortfolio = {}; 
+        let currentLevel = 1;
+        let totalNetWorthMax = 10000; // Track progress to next level
+        
+        assets.forEach(a => {
+            userPortfolio[a.id] = { units: 0, type: 'BUY', avgPrice: 0 };
+        });
+
+        let activeId = 'leaked_emails';
+        let chart = null;
+        let pendingIntel = null;
+        let isPreparing = false;
+        let prepTimerLeft = 0;
+
+        function init() {
+            assets.forEach(a => {
+                a.trend = Array.from({length: 30}, () => a.price + (Math.random() * 10 - 5));
+            });
+
+            const ctx = document.getElementById('mainChart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Array(30).fill(''),
+                    datasets: [{
+                        data: [],
+                        borderColor: '#00ff41',
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        tension: 0.2,
+                        fill: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { display: false },
+                        y: { grid: { color: '#ffffff05' }, ticks: { color: '#00ff4155' } }
+                    },
+                    animation: { duration: 0 }
+                }
+            });
+
+            selectAsset(activeId); 
+            updateUI();
+            
+            setInterval(marketTick, 2000);
+            setInterval(updateAgentCooldowns, 1000);
+            setInterval(updateNewsTicker, 10000);
+            setInterval(checkLevelProgress, 5000);
+        }
+
+        function checkLevelProgress() {
+            const netWorth = calculateNetWorth();
+            if (netWorth > totalNetWorthMax) {
+                totalNetWorthMax = netWorth;
+            }
+
+            // Leveling logic (Simple exponential: Level 2 at 25k, Level 3 at 75k, etc)
+            const nextLevelReq = 10000 * Math.pow(2.5, currentLevel);
+            const prevLevelReq = currentLevel === 1 ? 0 : 10000 * Math.pow(2.5, currentLevel - 1);
+            
+            const progress = ((netWorth - prevLevelReq) / (nextLevelReq - prevLevelReq)) * 100;
+            document.getElementById('level-progress').style.width = Math.min(100, Math.max(0, progress)) + '%';
+
+            if (netWorth >= nextLevelReq) {
+                currentLevel++;
+                addLog(`LEVEL UP! You are now Level ${currentLevel}. New agents may be unlocked.`);
+                updateUI();
+            }
+        }
+
+        function calculateNetWorth() {
+            return userBalance + assets.reduce((s, a) => {
+                const pos = userPortfolio[a.id];
+                if (pos.units === 0) return s;
+                const pnl = pos.type === 'BUY' ? (a.price - pos.avgPrice) * pos.units : (pos.avgPrice - a.price) * pos.units;
+                return s + (pos.units * pos.avgPrice) + pnl;
+            }, 0);
+        }
+
+        function selectAsset(id) {
+            activeId = id;
+            const active = assets.find(a => a.id === activeId);
+            const maxLot = Math.floor(userBalance / active.price); 
+            document.getElementById('trade-amount').value = Math.floor(maxLot * 0.4);
+            updateUI();
+        }
+
+        function updateNewsTicker() {
+            const news = newsPool[Math.floor(Math.random() * newsPool.length)];
+            document.getElementById('news-ticker').innerText = `${news} | USER_LEVEL: ${currentLevel} | NET_WORTH: ${calculateNetWorth().toFixed(0)}`;
+        }
+
+        function renderAgents() {
+            const container = document.getElementById('agent-list');
+            container.innerHTML = agents.map((a, i) => {
+                const isLocked = currentLevel < a.reqLevel;
+                return `
+                <div class="matrix-card p-3 rounded-lg flex flex-col gap-2 ${isLocked ? 'locked-agent' : ''}">
+                    ${isLocked ? `<div class="locked-badge">REQ LVL ${a.reqLevel}</div>` : ''}
+                    <div class="flex justify-between items-center">
+                        <span class="text-[10px] font-bold text-gray-400">${a.name}</span>
+                        <span id="cd-${a.id}" class="text-[9px] text-blue-400 uppercase">Ready</span>
+                    </div>
+                    <button onclick="getIntel(${i})" id="btn-${a.id}" class="bg-white/5 border border-[#00ff4133] py-2 rounded text-[9px] font-black hover:bg-[#00ff41] hover:text-black transition-all">
+                        BUY INTEL (${a.cost.toLocaleString()})
+                    </button>
+                </div>
+                `;
+            }).join('');
+        }
+
+        function getIntel(idx) {
+            const a = agents[idx];
+            if (userBalance >= a.cost && currentLevel >= a.reqLevel) {
+                userBalance -= a.cost;
+                a.lastUse = Date.now();
+                
+                const randomAsset = assets[Math.floor(Math.random() * assets.length)];
+                const isAccurate = Math.random() < a.intelQuality;
+                const prediction = Math.random() > 0.5 ? 'PUMP' : 'DUMP';
+                const durationTicks = 4 + Math.floor(Math.random() * 4);
+                
+                pendingIntel = { 
+                    assetId: randomAsset.id, 
+                    type: prediction, 
+                    accurate: isAccurate,
+                    magnitude: 0.15 + Math.random() * 0.2,
+                    duration: durationTicks
+                };
+
+                document.getElementById('intel-text').innerText = `Data leak from ${randomAsset.name}. Reliability: ${Math.floor(a.intelQuality*100)}%. Target impact detected.`;
+                document.getElementById('intel-impact').innerText = prediction === 'PUMP' ? 'EXPECTED RALLY' : 'EXPECTED CRASH';
+                document.getElementById('intel-impact').style.color = prediction === 'PUMP' ? '#00ff41' : '#ff003c';
+                document.getElementById('intel-duration').innerText = `${durationTicks} CYCLES`;
+
+                document.getElementById('intel-modal').classList.remove('hidden');
+                addLog(`Acquired intel from ${a.name}. Preparation phase started.`);
+                updateUI();
+            }
+        }
+
+        function closeIntel() {
+            document.getElementById('intel-modal').classList.add('hidden');
+            startPreparationCountdown(7); // Default 7 seconds preparation
+        }
+
+        function startPreparationCountdown(seconds) {
+            isPreparing = true;
+            prepTimerLeft = seconds;
+            const timerEl = document.getElementById('prep-timer');
+            const countdownVal = document.getElementById('countdown-val');
+            const chartCont = document.getElementById('chart-container');
+
+            timerEl.classList.remove('hidden');
+            chartCont.classList.add('preparing-mode');
+
+            const interval = setInterval(() => {
+                prepTimerLeft--;
+                countdownVal.innerText = Math.max(0, prepTimerLeft);
+                
+                if (prepTimerLeft <= 0) {
+                    clearInterval(interval);
+                    timerEl.classList.add('hidden');
+                    chartCont.classList.remove('preparing-mode');
+                    executePendingIntel();
+                }
+            }, 1000);
+        }
+
+        function buyTimeReduction() {
+            const reductionCost = 500;
+            if (userBalance >= reductionCost && prepTimerLeft > 1) {
+                userBalance -= reductionCost;
+                prepTimerLeft = Math.max(0, prepTimerLeft - 2);
+                addLog(`Bypassing firewall... Countdown reduced by 2s.`);
+                document.getElementById('countdown-val').innerText = prepTimerLeft;
+                updateUI();
+            }
+        }
+
+        function executePendingIntel() {
+            if (pendingIntel) {
+                const asset = assets.find(a => a.id === pendingIntel.assetId);
+                const direction = pendingIntel.accurate ? (pendingIntel.type === 'PUMP' ? 1 : -1) : (pendingIntel.type === 'PUMP' ? -1 : 1);
+                asset.momentumTicks = pendingIntel.duration;
+                asset.momentumDir = direction * pendingIntel.magnitude;
+                document.getElementById('insider-alert').classList.remove('hidden');
+                addLog(`MARKET IMPACT: ${asset.name} is highly volatile!`);
+                setTimeout(() => { document.getElementById('insider-alert').classList.add('hidden'); }, 5000);
+                pendingIntel = null;
+                isPreparing = false;
+            }
+        }
+
+        function marketTick() {
+            assets.forEach(a => {
+                let change = 0;
+                if (a.momentumTicks > 0) {
+                    change = a.price * a.momentumDir;
+                    a.momentumTicks--;
+                    change += (Math.random() * (change * 0.2)) - (change * 0.1);
+                } else {
+                    const vol = a.price * 0.03;
+                    change = (Math.random() * vol * 2 - vol);
+                }
+                a.price = Math.max(5, a.price + change);
+                a.trend.push(a.price);
+                if (a.trend.length > 30) a.trend.shift();
+            });
+            updateUI();
+        }
+
+        function updateAgentCooldowns() {
+            agents.forEach(a => {
+                const now = Date.now();
+                const remaining = Math.max(0, a.cooldown - (now - a.lastUse));
+                const btn = document.getElementById(`btn-${a.id}`);
+                const cdLabel = document.getElementById(`cd-${a.id}`);
+                if (remaining > 0) {
+                    btn.disabled = true;
+                    btn.style.opacity = '0.3';
+                    cdLabel.innerText = Math.ceil(remaining/1000) + 's';
+                } else {
+                    btn.disabled = ! (currentLevel >= a.reqLevel);
+                    btn.style.opacity = (currentLevel >= a.reqLevel) ? '1' : '0.3';
+                    cdLabel.innerText = (currentLevel >= a.reqLevel) ? 'ONLINE' : 'LOCKED';
+                    cdLabel.style.color = (currentLevel >= a.reqLevel) ? '#00ff41' : '#ff003c';
+                }
+            });
+        }
+
+        function updateUI() {
+            const active = assets.find(a => a.id === activeId);
+            const maxLot = Math.floor(userBalance / active.price); 
+            
+            document.getElementById('balance').innerText = userBalance.toLocaleString(undefined, {minimumFractionDigits: 2});
+            document.getElementById('active-asset-name').innerText = active.name;
+            document.getElementById('price-tag').innerText = active.price.toFixed(2);
+            document.getElementById('price-tag').style.color = active.color;
+            document.getElementById('max-lot-label').innerText = `Max: ${maxLot}`;
+            document.getElementById('level-display').innerText = currentLevel;
+            
+            const ranks = ["Novice", "Script Kiddie", "Data Thief", "Cyber Ghost", "Shadow Master", "System Sovereign"];
+            document.getElementById('rank-display').innerText = ranks[Math.min(ranks.length-1, currentLevel-1)];
+
+            chart.data.datasets[0].data = active.trend;
+            chart.data.datasets[0].borderColor = active.color;
+            chart.update();
+
+            renderAgents();
+
+            const mList = document.getElementById('market-list');
+            mList.innerHTML = assets.map(a => `
+                <div onclick="selectAsset('${a.id}')" class="matrix-card p-3 rounded cursor-pointer transition-all ${a.id === activeId ? 'bg-white/5 border-[#00ff41]' : 'opacity-60'}">
+                    <div class="flex justify-between text-[10px] font-bold">
+                        <span>${a.name} ${a.momentumTicks > 0 ? '⚡' : ''}</span>
+                        <span style="color:${a.color}">${a.price.toFixed(2)}</span>
+                    </div>
+                </div>
+            `).join('');
+
+            const pList = document.getElementById('portfolio-list');
+            const heldIds = Object.keys(userPortfolio).filter(id => userPortfolio[id].units > 0);
+            
+            pList.innerHTML = heldIds.length ? heldIds.map(id => {
+                const a = assets.find(as => as.id === id);
+                const pos = userPortfolio[id];
+                const pnlValue = pos.type === 'BUY' ? (a.price - pos.avgPrice) * pos.units : (pos.avgPrice - a.price) * pos.units;
+                const pnlPercent = (pnlValue / (pos.avgPrice * pos.units)) * 100;
+                const pnlColor = pnlValue >= 0 ? '#00ff41' : '#ff003c';
+                
+                return `<div class="flex flex-col border-b border-white/5 pb-2 mb-2">
+                    <div class="flex justify-between font-bold mb-1">
+                        <span class="${pos.type === 'BUY' ? 'text-green-500' : 'text-red-500'}">${pos.type} ${a.name} [${pos.units}]</span>
+                        <button onclick="closePosition('${id}')" class="text-[9px] bg-white/10 px-2 py-0.5 hover:bg-white/20 uppercase">Close</button>
+                    </div>
+                    <div class="flex justify-between opacity-70">
+                        <span>PnL: <span style="color:${pnlColor}">${pnlValue.toFixed(2)} (${pnlPercent.toFixed(1)}%)</span></span>
+                    </div>
+                </div>`;
+            }).join('') : '<p class="opacity-30 italic text-center py-2">No active positions.</p>';
+        }
+
+        function executeOrder(type) {
+            const inputField = document.getElementById('trade-amount');
+            let amt = parseInt(inputField.value);
+            const a = assets.find(as => as.id === activeId);
+            if (!amt || amt <= 0) return;
+
+            const currentPos = userPortfolio[activeId];
+            if (currentPos.units > 0 && currentPos.type !== type) {
+                addLog(`Close existing ${currentPos.type} position first.`);
+                return;
+            }
+
+            let totalCost = a.price * amt;
+            if (userBalance < totalCost) {
+                const maxPossible = Math.floor(userBalance / a.price);
+                if (maxPossible > 0) {
+                    addLog(`Insufficient funds. Adjusted to ${maxPossible} units.`);
+                    amt = maxPossible;
+                    totalCost = a.price * amt;
+                } else {
+                    addLog(`Insufficient funds for 1 unit.`);
+                    return;
+                }
+            }
+
+            userBalance -= totalCost;
+            const totalUnits = currentPos.units + amt;
+            const newAvg = ((currentPos.avgPrice * currentPos.units) + (a.price * amt)) / totalUnits;
+            userPortfolio[activeId] = { units: totalUnits, type: type, avgPrice: newAvg };
+            addLog(`Opened ${type} on ${a.name}: ${amt} units.`);
+            updateUI();
+        }
+
+        function closePosition(id) {
+            const pos = userPortfolio[id];
+            const a = assets.find(as => as.id === id);
+            const pnlValue = pos.type === 'BUY' ? (a.price - pos.avgPrice) * pos.units : (pos.avgPrice - a.price) * pos.units;
+            userBalance += (pos.units * pos.avgPrice) + pnlValue;
+            addLog(`Closed ${id}. Net: ${pnlValue >= 0 ? '+' : ''}${pnlValue.toFixed(2)}`);
+            userPortfolio[id] = { units: 0, type: 'BUY', avgPrice: 0 };
+            updateUI();
+        }
+
+        function addLog(msg) {
+            const console = document.getElementById('log-console');
+            const entry = document.createElement('div');
+            entry.innerText = `> ${msg}`;
+            console.prepend(entry);
+            if(console.childNodes.length > 10) console.lastChild.remove();
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
