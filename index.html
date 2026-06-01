@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ApexFunded - Professional Funded Account Manager</title>
+    <title>ApexFunded - Terminal Manajemen Akun Funded</title>
     
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -27,222 +27,84 @@
         }
     </script>
 
-    <!-- Google Fonts & Lucide Icons -->
+    <!-- Google Fonts, Lucide Icons, and ChartJS -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
         }
-        /* Custom scrollbar */
+        /* Custom scrollbar styling for premium feel */
         ::-webkit-scrollbar {
             width: 6px;
             height: 6px;
         }
         ::-webkit-scrollbar-track {
-            background: rgba(30, 41, 59, 0.5);
+            background: rgba(15, 23, 42, 0.6);
         }
         ::-webkit-scrollbar-thumb {
             background: rgba(99, 102, 241, 0.3);
-            border-radius: 4px;
+            border-radius: 8px;
         }
         ::-webkit-scrollbar-thumb:hover {
             background: rgba(99, 102, 241, 0.6);
         }
-        /* Glassmorphism Classes */
+        /* True Glassmorphism classes */
         .glass-panel {
-            background: rgba(15, 23, 42, 0.55);
+            background: rgba(15, 23, 42, 0.45);
             backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.07);
         }
         .light .glass-panel {
             background: rgba(255, 255, 255, 0.75);
             backdrop-filter: blur(16px);
-            border: 1px solid rgba(0, 0, 0, 0.05);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(0, 0, 0, 0.06);
         }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-100 transition-colors duration-300 dark:bg-slate-950 dark:text-slate-100 light:bg-slate-50 light:text-slate-900 min-h-screen flex flex-col">
+<body class="bg-slate-950 text-slate-100 transition-colors duration-300 dark:bg-slate-950 dark:text-slate-100 light:bg-slate-50 light:text-slate-900 min-h-screen flex flex-col overflow-x-hidden">
 
-    <!-- APP NOTIFICATION COMPONENT -->
-    <div id="toast-container" class="fixed top-5 right-5 z-[150] flex flex-col gap-2 pointer-events-none"></div>
+    <!-- Dynamic notification alerts wrapper -->
+    <div id="toast-container" class="fixed top-5 right-5 z-[100] flex flex-col gap-2 pointer-events-none"></div>
 
-    <!-- CUSTOM DIALOG MODAL (REPLACES BROWSER CONFIRM/ALERT) -->
-    <div id="custom-dialog" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4 hidden">
-        <div class="w-full max-w-sm glass-panel rounded-2xl p-6 space-y-4 shadow-2xl border border-slate-800">
-            <div class="flex items-center gap-3 text-amber-500" id="dialog-header-icon">
-                <i data-lucide="alert-triangle" class="w-6 h-6" id="dialog-icon"></i>
-                <h4 class="font-bold text-sm text-white" id="dialog-title">Konfirmasi Tindakan</h4>
-            </div>
-            <p class="text-xs text-slate-300 leading-relaxed" id="dialog-message">Apakah Anda yakin ingin melakukan tindakan ini?</p>
-            <div class="flex justify-end gap-3 pt-2">
-                <button id="dialog-btn-cancel" class="px-4 py-2 bg-slate-900 hover:bg-slate-850 text-xs font-semibold text-slate-400 rounded-xl transition">Batal</button>
-                <button id="dialog-btn-confirm" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-xs font-semibold text-white rounded-xl transition">Yakin</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- AUTHENTICATION CONTAINER (LOGIN / REGISTER / FORGOT) -->
-    <div id="auth-container" class="min-h-screen flex items-center justify-center p-4 bg-radial from-slate-900 to-slate-950 relative overflow-hidden">
-        <!-- Decorative Background Glows -->
-        <div class="absolute -top-40 -left-40 w-96 h-96 bg-brand-600 rounded-full filter blur-[150px] opacity-20 pointer-events-none"></div>
-        <div class="absolute -bottom-40 -right-40 w-96 h-96 bg-emerald-500 rounded-full filter blur-[150px] opacity-10 pointer-events-none"></div>
-
-        <!-- Auth Card -->
-        <div class="w-full max-w-md glass-panel p-8 rounded-2xl shadow-2xl relative z-10 transition-all duration-300 transform scale-100">
-            <!-- Brand Info -->
-            <div class="text-center mb-8">
-                <div class="inline-flex items-center justify-center p-3 bg-brand-500/10 rounded-xl mb-3 border border-brand-500/20">
-                    <i data-lucide="trending-up" class="w-8 h-8 text-brand-500"></i>
-                </div>
-                <h1 id="auth-logo-text" class="text-2xl font-extrabold tracking-tight bg-gradient-to-r from-brand-500 to-emerald-400 bg-clip-text text-transparent">ApexFunded</h1>
-                <p id="auth-subtitle" class="text-xs text-slate-400 mt-1">Platform Manajemen Trading Funded Profesional</p>
-            </div>
-
-            <!-- Login Form -->
-            <form id="login-form" class="space-y-4">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Email</label>
-                    <div class="relative">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500">
-                            <i data-lucide="mail" class="w-4 h-4"></i>
-                        </span>
-                        <input type="email" id="login-email" class="w-full pl-10 pr-4 py-2.5 bg-slate-900/50 border border-slate-800 rounded-xl focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none text-sm transition" placeholder="you@example.com" required>
-                    </div>
-                </div>
-                <div>
-                    <div class="flex justify-between mb-1.5">
-                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Password</label>
-                        <button type="button" onclick="showAuthTab('forgot')" class="text-xs text-brand-500 hover:underline">Lupa Password?</button>
-                    </div>
-                    <div class="relative">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500">
-                            <i data-lucide="lock" class="w-4 h-4"></i>
-                        </span>
-                        <input type="password" id="login-password" class="w-full pl-10 pr-4 py-2.5 bg-slate-900/50 border border-slate-800 rounded-xl focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none text-sm transition" placeholder="••••••••" required>
-                    </div>
-                </div>
-                <button type="submit" class="w-full py-3 bg-brand-600 hover:bg-brand-700 active:scale-[0.98] text-white font-semibold rounded-xl shadow-lg shadow-brand-500/20 transition duration-150 mt-2 flex items-center justify-center gap-2">
-                    Masuk ke Dashboard <i data-lucide="arrow-right" class="w-4 h-4"></i>
-                </button>
-                <p class="text-center text-sm text-slate-400 mt-4">
-                    Belum punya akun? <button type="button" onclick="showAuthTab('register')" class="text-brand-500 hover:underline font-medium">Daftar Sekarang</button>
-                </p>
-            </form>
-
-            <!-- Register Form -->
-            <form id="register-form" class="space-y-4 hidden">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Nama Lengkap</label>
-                    <div class="relative">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500">
-                            <i data-lucide="user" class="w-4 h-4"></i>
-                        </span>
-                        <input type="text" id="reg-name" class="w-full pl-10 pr-4 py-2.5 bg-slate-900/50 border border-slate-800 rounded-xl focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none text-sm transition" placeholder="Trader Handal" required>
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Email</label>
-                    <div class="relative">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500">
-                            <i data-lucide="mail" class="w-4 h-4"></i>
-                        </span>
-                        <input type="email" id="reg-email" class="w-full pl-10 pr-4 py-2.5 bg-slate-900/50 border border-slate-800 rounded-xl focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none text-sm transition" placeholder="you@example.com" required>
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Password</label>
-                    <div class="relative">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500">
-                            <i data-lucide="lock" class="w-4 h-4"></i>
-                        </span>
-                        <input type="password" id="reg-password" class="w-full pl-10 pr-4 py-2.5 bg-slate-900/50 border border-slate-800 rounded-xl focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none text-sm transition" placeholder="Minimal 6 Karakter" required minlength="6">
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Role Pilihan</label>
-                    <select id="reg-role" class="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-800 rounded-xl focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none text-sm text-slate-300 transition">
-                        <option value="trader" class="bg-slate-950">Trader Only (Akses Dashboard & Jurnal)</option>
-                        <option value="admin" class="bg-slate-950">Admin (Akses Full Termasuk Setelan Web)</option>
-                    </select>
-                </div>
-                <button type="submit" class="w-full py-3 bg-brand-600 hover:bg-brand-700 active:scale-[0.98] text-white font-semibold rounded-xl shadow-lg shadow-brand-500/20 transition duration-150 flex items-center justify-center gap-2">
-                    Buat Akun Baru <i data-lucide="user-plus" class="w-4 h-4"></i>
-                </button>
-                <p class="text-center text-sm text-slate-400 mt-4">
-                    Sudah punya akun? <button type="button" onclick="showAuthTab('login')" class="text-brand-500 hover:underline font-medium">Login Disini</button>
-                </p>
-            </form>
-
-            <!-- Forgot Password Form -->
-            <form id="forgot-form" class="space-y-4 hidden">
-                <div class="bg-brand-500/10 border border-brand-500/20 p-3.5 rounded-xl mb-4 text-xs text-brand-400 leading-relaxed">
-                    Sistem akan memverifikasi email kamu di sistem lokal dan mengizinkan kamu mereset password secara langsung untuk simulasi ini.
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Masukkan Email Terdaftar</label>
-                    <div class="relative">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500">
-                            <i data-lucide="mail" class="w-4 h-4"></i>
-                        </span>
-                        <input type="email" id="forgot-email" class="w-full pl-10 pr-4 py-2.5 bg-slate-900/50 border border-slate-800 rounded-xl focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none text-sm transition" placeholder="you@example.com" required>
-                    </div>
-                </div>
-                <div id="reset-password-area" class="hidden space-y-4 pt-2">
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Password Baru</label>
-                        <input type="password" id="reset-new-password" class="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-800 rounded-xl focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none text-sm transition" placeholder="••••••••" minlength="6">
-                    </div>
-                    <button type="button" onclick="handlePasswordReset()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl transition duration-150 flex items-center justify-center gap-2">
-                        Simpan Password Baru <i data-lucide="check-circle-2" class="w-4 h-4"></i>
-                    </button>
-                </div>
-                <button type="submit" id="btn-forgot-verify" class="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl transition duration-150 flex items-center justify-center gap-2">
-                    Verifikasi Email <i data-lucide="shield-check" class="w-4 h-4"></i>
-                </button>
-                <p class="text-center text-sm text-slate-400 mt-4">
-                    Kembali ke <button type="button" onclick="showAuthTab('login')" class="text-brand-500 hover:underline font-medium">Halaman Login</button>
-                </p>
-            </form>
-        </div>
-    </div>
-
-    <!-- APP MAIN INTERFACE (SIDEBAR + CONTENT) -->
-    <div id="main-app" class="hidden min-h-screen flex flex-col md:flex-row relative">
+    <!-- The main layout is visible by default to guarantee immediate loading rendering -->
+    <div id="main-app" class="min-h-screen flex flex-col md:flex-row relative">
         
-        <!-- Sidebar Navigation -->
-        <aside id="sidebar" class="w-full md:w-64 glass-panel border-r border-slate-800 flex flex-col z-20 transition-all duration-300">
-            <!-- Header Sidebar (Logo) -->
+        <!-- Responsive Sidebar -->
+        <aside id="sidebar" class="fixed inset-y-0 left-0 z-30 w-64 transform -translate-x-full md:translate-x-0 md:static md:inset-auto transition-transform duration-300 ease-in-out glass-panel flex flex-col">
+            <!-- Sidebar Brand Header -->
             <div class="p-5 flex items-center justify-between border-b border-slate-800/80">
                 <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-lg bg-gradient-to-tr from-brand-600 to-emerald-500 flex items-center justify-center text-white" id="sidebar-logo-container">
+                    <div class="w-9 h-9 rounded-lg bg-gradient-to-tr from-brand-600 to-emerald-500 flex items-center justify-center text-white">
                         <i data-lucide="trending-up" class="w-5 h-5"></i>
                     </div>
                     <div>
                         <h2 id="sidebar-web-name" class="font-extrabold text-sm tracking-tight bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">ApexFunded</h2>
-                        <span class="text-[10px] text-emerald-400 font-semibold px-1.5 py-0.5 rounded-full bg-emerald-500/10">PRO TERMINAL</span>
+                        <span class="text-[10px] text-emerald-400 font-semibold px-1.5 py-0.5 rounded-full bg-emerald-500/10">PRO CONSOLE</span>
                     </div>
                 </div>
+                <!-- Close menu on mobile -->
                 <button onclick="toggleMobileSidebar()" class="md:hidden text-slate-400 hover:text-white">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
 
-            <!-- Active User Profile Summary -->
+            <!-- Active Trader Profile Profile Badge -->
             <div class="p-4 border-b border-slate-800/80 bg-slate-900/20 flex items-center gap-3">
                 <img id="sidebar-avatar" src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=100&q=80" alt="Avatar" class="w-10 h-10 rounded-full border border-slate-700 object-cover">
                 <div class="overflow-hidden">
-                    <h4 id="sidebar-user-name" class="font-bold text-xs truncate">Trader Handal</h4>
+                    <h4 id="sidebar-user-name" class="font-bold text-xs truncate text-slate-100 dark:text-slate-100 light:text-slate-900">Trader Handal</h4>
                     <span id="sidebar-user-role" class="text-[9px] uppercase tracking-widest text-brand-400 font-bold">PRO TRADER</span>
                 </div>
             </div>
 
-            <!-- Navigation Links -->
+            <!-- Navigation items -->
             <nav class="flex-1 p-4 space-y-1.5 overflow-y-auto">
-                <button onclick="switchView('dashboard')" data-view="dashboard" class="nav-link w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-300 hover:bg-slate-900/50 hover:text-white transition duration-200">
+                <button onclick="switchView('dashboard')" data-view="dashboard" class="nav-link w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-300 hover:bg-slate-900/50 hover:text-white transition duration-200 bg-brand-600/20 text-brand-400 border-l-4 border-brand-500">
                     <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard Performa
                 </button>
                 <button onclick="switchView('account-manager')" data-view="account-manager" class="nav-link w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-300 hover:bg-slate-900/50 hover:text-white transition duration-200">
@@ -261,21 +123,21 @@
                     <i data-lucide="settings" class="w-4 h-4"></i> Pengaturan
                 </button>
                 
-                <!-- Admin Only Panel Section Divider -->
+                <!-- Admin divider -->
                 <div class="pt-4 pb-2 border-t border-slate-800/80 mt-4" id="admin-divider">
                     <span class="px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Sistem Admin</span>
                 </div>
                 
-                <button id="nav-btn-admin" onclick="switchView('admin-panel')" data-view="admin-panel" class="nav-link w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-400 hover:bg-red-500/10 hover:text-red-300 transition duration-200 hidden">
+                <button id="nav-btn-admin" onclick="switchView('admin-panel')" data-view="admin-panel" class="nav-link w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 transition duration-200">
                     <i data-lucide="terminal" class="w-4 h-4"></i> Panel Admin Utama
                 </button>
             </nav>
 
-            <!-- Bottom Section (Logout & Theme Toggle) -->
+            <!-- Theme toggle and logout -->
             <div class="p-4 border-t border-slate-800/80 space-y-2">
                 <div class="flex items-center justify-between px-2">
                     <span class="text-xs text-slate-400 font-medium">Tema Visual</span>
-                    <button onclick="toggleDarkMode()" class="p-2 rounded-lg bg-slate-900/60 hover:bg-slate-900 text-slate-300 border border-slate-850">
+                    <button onclick="toggleDarkMode()" class="p-2 rounded-lg bg-slate-900/60 hover:bg-slate-900 text-slate-300 border border-slate-800">
                         <i id="theme-icon" data-lucide="moon" class="w-4 h-4"></i>
                     </button>
                 </div>
@@ -285,10 +147,10 @@
             </div>
         </aside>
 
-        <!-- Main Content Area -->
-        <main class="flex-1 flex flex-col overflow-x-hidden min-h-screen animate-fade-in">
+        <!-- Content Area -->
+        <main class="flex-1 flex flex-col overflow-x-hidden min-h-screen">
             
-            <!-- Global Top Bar for Mobile & Quick Actions -->
+            <!-- Global Top Bar -->
             <header class="h-16 glass-panel border-b border-slate-800/80 flex items-center justify-between px-6 z-10">
                 <div class="flex items-center gap-3">
                     <button onclick="toggleMobileSidebar()" class="md:hidden text-slate-300 hover:text-white p-1 rounded-lg hover:bg-slate-900">
@@ -306,15 +168,14 @@
                 <!-- Live Status Indicators -->
                 <div class="flex items-center gap-4">
                     <div class="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-bold text-emerald-400">
-                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> SYSTEM ACTIVE & SECURE
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> TERMINAL AKTIF
                     </div>
                 </div>
             </header>
 
-            <!-- Main Content Container with dynamic sub-sections -->
             <div id="content-area" class="p-6 md:p-8 space-y-8 flex-1">
                 
-                <!-- SECTION 1: DASHBOARD -->
+                <!-- SECTION 1: DASHBOARD (VISIBLE BY DEFAULT) -->
                 <div id="view-dashboard" class="space-y-6">
                     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div>
@@ -325,22 +186,22 @@
                             <button onclick="openAddAccountModal()" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl text-xs flex items-center gap-2 transition active:scale-95 shadow-lg shadow-brand-500/10">
                                 <i data-lucide="plus" class="w-4 h-4"></i> Akun Baru
                             </button>
-                            <button onclick="exportToCSV()" class="px-4 py-2 bg-slate-900 hover:bg-slate-850 text-slate-300 font-semibold rounded-xl text-xs border border-slate-850 flex items-center gap-2 transition">
+                            <button onclick="exportToCSV()" class="px-4 py-2 bg-slate-900 hover:bg-slate-855 text-slate-300 font-semibold rounded-xl text-xs border border-slate-800 flex items-center gap-2 transition">
                                 <i data-lucide="download" class="w-4 h-4"></i> Ekspor Data
                             </button>
                         </div>
                     </div>
 
                     <!-- Challenge Progress Header (Visual Goal Indicator) -->
-                    <div class="glass-panel p-6 rounded-2xl space-y-4 shadow-xl">
+                    <div class="glass-panel p-6 rounded-2xl space-y-4">
                         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                             <div>
                                 <span class="text-xs uppercase font-extrabold tracking-wider text-slate-400">Target Profit Progression</span>
-                                <h3 class="text-xl font-extrabold mt-1 text-white" id="dash-progression-title">Progress: $0.00 / $10,000.00</h3>
+                                <h3 class="text-xl font-extrabold mt-1 text-slate-100" id="dash-progression-title">Progress: $0.00 / $10,000.00</h3>
                             </div>
                             <span id="dash-progression-percent" class="px-3 py-1 rounded-full bg-brand-500/10 border border-brand-500/20 text-xs font-bold text-brand-400">0% Selesai</span>
                         </div>
-                        <!-- Progress bar wrapper -->
+                        <!-- Beautiful Progress bar wrapper -->
                         <div class="w-full bg-slate-900/60 rounded-full h-4 overflow-hidden p-0.5 border border-slate-800">
                             <div id="dash-progress-bar" class="bg-gradient-to-r from-brand-600 to-emerald-400 h-full rounded-full transition-all duration-1000 ease-out" style="width: 0%"></div>
                         </div>
@@ -354,7 +215,6 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                         <!-- Card: Balance -->
                         <div class="glass-panel p-5 rounded-2xl relative overflow-hidden group hover:border-brand-500/40 transition-all duration-300">
-                            <div class="absolute -right-5 -bottom-5 w-24 h-24 bg-brand-500/5 rounded-full filter blur-xl pointer-events-none"></div>
                             <div class="flex items-center justify-between mb-3">
                                 <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Account Balance</span>
                                 <div class="p-2 bg-brand-500/10 rounded-lg text-brand-400"><i data-lucide="banknote" class="w-4.5 h-4.5"></i></div>
@@ -365,7 +225,6 @@
                         
                         <!-- Card: Equity -->
                         <div class="glass-panel p-5 rounded-2xl relative overflow-hidden group hover:border-emerald-500/40 transition-all duration-300">
-                            <div class="absolute -right-5 -bottom-5 w-24 h-24 bg-emerald-500/5 rounded-full filter blur-xl pointer-events-none"></div>
                             <div class="flex items-center justify-between mb-3">
                                 <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Current Equity</span>
                                 <div class="p-2 bg-emerald-500/10 rounded-lg text-emerald-400"><i data-lucide="scale" class="w-4.5 h-4.5"></i></div>
@@ -376,20 +235,18 @@
 
                         <!-- Card: Daily Profit/Loss -->
                         <div class="glass-panel p-5 rounded-2xl relative overflow-hidden group hover:border-amber-500/40 transition-all duration-300" id="card-daily-pnl-border">
-                            <div class="absolute -right-5 -bottom-5 w-24 h-24 bg-amber-500/5 rounded-full filter blur-xl pointer-events-none"></div>
                             <div class="flex items-center justify-between mb-3">
                                 <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Profit Hari Ini</span>
                                 <div class="p-2 bg-slate-900 rounded-lg" id="dash-card-daily-icon-bg">
-                                    <i data-lucide="coins" class="w-4.5 h-4.5 text-amber-500" id="dash-card-daily-icon"></i>
+                                    <i data-lucide="coins" class="w-4.5 h-4.5 text-amber-400" id="dash-card-daily-icon"></i>
                                 </div>
                             </div>
-                            <h3 id="dash-card-daily-profit" class="text-2xl font-black text-emerald-400">+$0.00</h3>
-                            <p class="text-[11px] text-slate-400 mt-1" id="dash-card-daily-sub">Kinerja harian (0.00%)</p>
+                            <h3 id="dash-card-daily-profit" class="text-2xl font-black text-emerald-400">+$150.00</h3>
+                            <p class="text-[11px] text-slate-400 mt-1" id="dash-card-daily-sub">Kinerja harian (0.15%)</p>
                         </div>
 
                         <!-- Card: Total Profit/Loss -->
                         <div class="glass-panel p-5 rounded-2xl relative overflow-hidden group hover:border-violet-500/40 transition-all duration-300" id="card-total-pnl-border">
-                            <div class="absolute -right-5 -bottom-5 w-24 h-24 bg-violet-500/5 rounded-full filter blur-xl pointer-events-none"></div>
                             <div class="flex items-center justify-between mb-3">
                                 <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Total Profit & Loss</span>
                                 <div class="p-2 bg-slate-900 rounded-lg" id="dash-card-total-icon-bg">
@@ -404,42 +261,42 @@
                     <!-- Risk & Drawdown Monitor Cards -->
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <!-- Daily Drawdown Panel -->
-                        <div class="glass-panel p-5 rounded-2xl border-l-4 border-l-amber-500 shadow-lg">
+                        <div class="glass-panel p-5 rounded-2xl border-l-4 border-l-amber-500">
                             <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Daily Drawdown Status</span>
                             <div class="flex justify-between items-end mt-2">
                                 <div>
-                                    <h4 id="dash-daily-dd-val" class="text-xl font-bold text-slate-200">$0.00 / $5,000.00</h4>
-                                    <p class="text-xs text-emerald-400 font-semibold mt-1" id="dash-daily-dd-left">Sisa batas aman: $5,000.00</p>
+                                    <h4 id="dash-daily-dd-val" class="text-xl font-bold text-slate-200">$500.00 / $5,000.00</h4>
+                                    <p class="text-xs text-rose-400 font-semibold mt-1" id="dash-daily-dd-left">Sisa batas aman: $4,500.00</p>
                                 </div>
-                                <span id="dash-daily-dd-percent" class="text-xs px-2 py-1 bg-amber-500/10 text-amber-400 rounded-lg font-bold">0% Digunakan</span>
+                                <span id="dash-daily-dd-percent" class="text-xs px-2 py-1 bg-amber-500/10 text-amber-400 rounded-lg font-bold">10% Digunakan</span>
                             </div>
                         </div>
 
                         <!-- Maximum Drawdown Panel -->
-                        <div class="glass-panel p-5 rounded-2xl border-l-4 border-l-red-500 shadow-lg">
+                        <div class="glass-panel p-5 rounded-2xl border-l-4 border-l-red-500">
                             <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Max Overall Drawdown</span>
                             <div class="flex justify-between items-end mt-2">
                                 <div>
-                                    <h4 id="dash-max-dd-val" class="text-xl font-bold text-slate-200">$0.00 / $10,000.00</h4>
-                                    <p class="text-xs text-emerald-400 font-semibold mt-1" id="dash-max-dd-left">Sisa batas aman: $10,000.00</p>
+                                    <h4 id="dash-max-dd-val" class="text-xl font-bold text-slate-200">$1,200.00 / $10,000.00</h4>
+                                    <p class="text-xs text-rose-400 font-semibold mt-1" id="dash-max-dd-left">Sisa batas aman: $8,800.00</p>
                                 </div>
-                                <span id="dash-max-dd-percent" class="text-xs px-2 py-1 bg-red-500/10 text-red-400 rounded-lg font-bold">0% Digunakan</span>
+                                <span id="dash-max-dd-percent" class="text-xs px-2 py-1 bg-red-500/10 text-red-400 rounded-lg font-bold">12% Digunakan</span>
                             </div>
                         </div>
 
                         <!-- Statistics Grid (Win Rate, Trades Count, RRR) -->
-                        <div class="glass-panel p-5 rounded-2xl grid grid-cols-3 gap-2 text-center shadow-lg">
+                        <div class="glass-panel p-5 rounded-2xl grid grid-cols-3 gap-2 text-center">
                             <div class="flex flex-col justify-center border-r border-slate-800">
                                 <span class="text-[10px] uppercase font-bold text-slate-500">Win Rate</span>
-                                <h4 id="dash-winrate" class="text-lg font-extrabold text-emerald-400 mt-1">0.0%</h4>
+                                <h4 id="dash-winrate" class="text-lg font-extrabold text-emerald-400 mt-1">68.4%</h4>
                             </div>
                             <div class="flex flex-col justify-center border-r border-slate-800">
                                 <span class="text-[10px] uppercase font-bold text-slate-500">Total Trade</span>
-                                <h4 id="dash-trades-count" class="text-lg font-extrabold text-slate-200 mt-1">0</h4>
+                                <h4 id="dash-trades-count" class="text-lg font-extrabold text-slate-200 mt-1">32</h4>
                             </div>
                             <div class="flex flex-col justify-center">
                                 <span class="text-[10px] uppercase font-bold text-slate-500">Risk Reward</span>
-                                <h4 id="dash-rrr" class="text-lg font-extrabold text-brand-400 mt-1">1:2.0</h4>
+                                <h4 id="dash-rrr" class="text-lg font-extrabold text-brand-400 mt-1">1:2.4</h4>
                             </div>
                         </div>
                     </div>
@@ -455,19 +312,19 @@
                             <div class="grid grid-cols-2 gap-4 text-xs">
                                 <div>
                                     <span class="text-slate-500 block">Nomor Akun</span>
-                                    <span id="dash-acc-num" class="font-bold text-slate-200 text-sm">-</span>
+                                    <span id="dash-acc-num" class="font-bold text-slate-200 text-sm">8819203</span>
                                 </div>
                                 <div>
                                     <span class="text-slate-500 block">Broker</span>
-                                    <span id="dash-acc-broker" class="font-bold text-slate-200 text-sm">-</span>
+                                    <span id="dash-acc-broker" class="font-bold text-slate-200 text-sm">ThinkMarkets (FTMO)</span>
                                 </div>
                                 <div>
                                     <span class="text-slate-500 block">Starting Balance</span>
-                                    <span id="dash-acc-start-bal" class="font-bold text-slate-200 text-sm">$0.00</span>
+                                    <span id="dash-acc-start-bal" class="font-bold text-slate-200 text-sm">$100,000.00</span>
                                 </div>
                                 <div>
                                     <span class="text-slate-500 block">Status Akun</span>
-                                    <span id="dash-acc-status" class="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-bold inline-block text-[10px]">-</span>
+                                    <span id="dash-acc-status" class="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-bold inline-block text-[10px]">Challenge Active</span>
                                 </div>
                             </div>
                         </div>
@@ -482,10 +339,10 @@
                                 <div>
                                     <div class="flex justify-between text-xs mb-1">
                                         <span class="text-slate-400">Maks. Trade Harian: <strong id="rule-dash-max-trade">5 Trades</strong></span>
-                                        <span class="font-bold text-slate-200" id="rule-status-trades-count">0 / 5</span>
+                                        <span class="font-bold text-slate-200" id="rule-status-trades-count">2 / 5</span>
                                     </div>
                                     <div class="w-full bg-slate-900 h-2 rounded-full overflow-hidden">
-                                        <div id="bar-rules-max-trade" class="bg-amber-500 h-full transition-all" style="width: 0%"></div>
+                                        <div id="bar-rules-max-trade" class="bg-amber-500 h-full transition-all" style="width: 40%"></div>
                                     </div>
                                 </div>
                                 <div>
@@ -499,7 +356,7 @@
                     </div>
                 </div>
 
-                <!-- SECTION 2: ACCOUNT MANAGER -->
+                <!-- SECTION 2: ACCOUNT MANAGER (HIDDEN BY DEFAULT) -->
                 <div id="view-account-manager" class="space-y-6 hidden">
                     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div>
@@ -517,7 +374,7 @@
                     </div>
                 </div>
 
-                <!-- SECTION 3: TRADE JOURNAL -->
+                <!-- SECTION 3: TRADE JOURNAL (HIDDEN BY DEFAULT) -->
                 <div id="view-trade-journal" class="space-y-6 hidden">
                     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div>
@@ -528,10 +385,10 @@
                             <button onclick="openAddTradeModal()" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl text-xs flex items-center gap-2 transition active:scale-95">
                                 <i data-lucide="book-open" class="w-4 h-4"></i> Catat Trade Baru
                             </button>
-                            <button onclick="exportToCSV()" class="px-4 py-2 bg-slate-900 hover:bg-slate-850 text-slate-300 font-semibold rounded-xl text-xs border border-slate-850 flex items-center gap-2 transition">
+                            <button onclick="exportToCSV()" class="px-4 py-2 bg-slate-900 hover:bg-slate-850 text-slate-300 font-semibold rounded-xl text-xs border border-slate-800 flex items-center gap-2 transition">
                                 <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> CSV
                             </button>
-                            <button onclick="exportToPDF()" class="px-4 py-2 bg-slate-900 hover:bg-slate-850 text-slate-300 font-semibold rounded-xl text-xs border border-slate-850 flex items-center gap-2 transition">
+                            <button onclick="exportToPDF()" class="px-4 py-2 bg-slate-900 hover:bg-slate-850 text-slate-300 font-semibold rounded-xl text-xs border border-slate-800 flex items-center gap-2 transition">
                                 <i data-lucide="file-text" class="w-4 h-4"></i> PDF Report
                             </button>
                         </div>
@@ -557,7 +414,7 @@
                         </div>
                         <div class="w-full md:w-auto flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2">
                             <i data-lucide="search" class="w-4 h-4 text-slate-500"></i>
-                            <input type="text" id="journal-search" oninput="filterJournal()" placeholder="Cari catatan psikologi..." class="bg-transparent border-none outline-none text-slate-300 w-full md:w-48">
+                            <input type="text" id="journal-search" oninput="filterJournal()" placeholder="Cari catatan..." class="bg-transparent border-none outline-none text-slate-300 w-full md:w-48">
                         </div>
                     </div>
 
@@ -589,11 +446,11 @@
                     </div>
                 </div>
 
-                <!-- SECTION 4: ANALYTICS -->
+                <!-- SECTION 4: ANALYTICS (HIDDEN BY DEFAULT) -->
                 <div id="view-analytics" class="space-y-6 hidden">
                     <div>
                         <h2 class="text-2xl font-extrabold text-white">Analisis Chart Kinerja</h2>
-                        <p class="text-xs text-slate-400 mt-1">Analisis mendalam distribusi performa harian/mingguan akun aktif Anda.</p>
+                        <p class="text-xs text-slate-400 mt-1">Analisis mendalam distribusi koin koin trading, rasio, dan performa harian/mingguan akun aktif.</p>
                     </div>
 
                     <!-- Charts Grid -->
@@ -644,7 +501,7 @@
                     </div>
                 </div>
 
-                <!-- SECTION 5: RULES BUILDER -->
+                <!-- SECTION 5: RULES BUILDER (HIDDEN BY DEFAULT) -->
                 <div id="view-rules-builder" class="space-y-6 hidden">
                     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div>
@@ -661,7 +518,7 @@
                         <div class="glass-panel p-6 rounded-2xl space-y-4">
                             <h3 class="font-bold text-sm text-white pb-2 border-b border-slate-800">Ubah Aturan Mandiri</h3>
                             
-                            <div class="space-y-3 text-xs">
+                            <div class="space-y-3 text-xs text-slate-300">
                                 <div>
                                     <label class="block text-slate-400 font-semibold mb-1">Maksimum Daily Drawdown (%)</label>
                                     <input type="number" id="rules-input-daily-dd" class="w-full px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl focus:border-brand-500 outline-none text-slate-200" placeholder="Contoh: 5">
@@ -701,10 +558,10 @@
                     </div>
                 </div>
 
-                <!-- SECTION 6: SETTINGS (PROFIL & TEMA & LOGO & EXPORT) -->
+                <!-- SECTION 6: SETTINGS (HIDDEN BY DEFAULT) -->
                 <div id="view-settings" class="space-y-6 hidden">
                     <div>
-                        <h2 class="text-2xl font-extrabold text-white">Pengaturan & Kustomisasi Platform</h2>
+                        <h2 class="text-2xl font-extrabold text-white">Pengaturan & Kostumisasi Platform</h2>
                         <p class="text-xs text-slate-400 mt-1">Sesuaikan preferensi aplikasi, profil trading, hingga skema warna global sesuai kemauan Anda.</p>
                     </div>
 
@@ -763,7 +620,7 @@
                     </div>
                 </div>
 
-                <!-- SECTION 7: MAIN ADMIN PANEL -->
+                <!-- SECTION 7: MAIN ADMIN PANEL (HIDDEN BY DEFAULT) -->
                 <div id="view-admin-panel" class="space-y-6 hidden">
                     <div class="border-b border-slate-800 pb-4">
                         <h2 class="text-2xl font-black text-rose-500">Pusat Sistem Admin (Control Center)</h2>
@@ -776,7 +633,7 @@
                         <div class="glass-panel p-5 rounded-2xl space-y-4">
                             <h3 class="font-bold text-xs text-slate-300 uppercase tracking-widest flex items-center gap-2"><i data-lucide="database" class="w-4 h-4 text-brand-500"></i> Overwrite Statistik Akun</h3>
                             
-                            <div class="space-y-3 text-xs">
+                            <div class="space-y-3 text-xs text-slate-300">
                                 <div>
                                     <label class="block text-slate-500 font-semibold mb-1">Overide Balance Aktif ($)</label>
                                     <input type="number" id="admin-overide-balance" class="w-full px-4 py-2 bg-slate-900 border border-slate-800 rounded-lg outline-none text-slate-200">
@@ -792,7 +649,7 @@
                         <!-- Widget 2: Fast Configuration Rules -->
                         <div class="glass-panel p-5 rounded-2xl space-y-4">
                             <h3 class="font-bold text-xs text-slate-300 uppercase tracking-widest flex items-center gap-2"><i data-lucide="sliders" class="w-4 h-4 text-emerald-500"></i> Aturan Admin Terpusat</h3>
-                            <div class="space-y-3 text-xs">
+                            <div class="space-y-3 text-xs text-slate-300">
                                 <div>
                                     <label class="block text-slate-500 font-semibold mb-1">Target Profit Challenge ($)</label>
                                     <input type="number" id="admin-overide-target" class="w-full px-4 py-2 bg-slate-900 border border-slate-800 rounded-lg outline-none text-slate-200" placeholder="10000">
@@ -813,7 +670,7 @@
                                 <button onclick="confirmResetAllData()" class="w-full py-2.5 bg-rose-500/10 hover:bg-rose-500 border border-rose-500/30 text-rose-400 hover:text-white font-bold rounded-lg transition text-xs flex items-center justify-center gap-2">
                                     <i data-lucide="alert-octagon" class="w-4 h-4"></i> Reset Semua Data ke Default
                                 </button>
-                                <button onclick="simulateAddDummyTrades()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-lg transition text-xs">Simulasi Tambah 3 Trade Demo</button>
+                                <button onclick="simulateAddDummyTrades()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-lg transition text-xs">Simulasi Tambah 5 Trade Demo</button>
                             </div>
                         </div>
                     </div>
@@ -853,7 +710,6 @@
         </main>
     </div>
 
-
     <!-- MODAL: ADD / EDIT ACCOUNT MODAL -->
     <div id="account-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
         <div class="w-full max-w-lg glass-panel rounded-2xl shadow-2xl p-6 relative">
@@ -862,7 +718,7 @@
             </button>
             <h3 id="account-modal-title" class="text-lg font-extrabold text-white mb-4">Tambah Akun Funded Baru</h3>
             
-            <form id="account-form" onsubmit="handleAccountSubmit(event)" class="space-y-4 text-xs">
+            <form id="account-form" onsubmit="handleAccountSubmit(event)" class="space-y-4 text-xs text-slate-300">
                 <input type="hidden" id="account-edit-id">
                 <div class="grid grid-cols-2 gap-4">
                     <div>
@@ -909,7 +765,6 @@
         </div>
     </div>
 
-
     <!-- MODAL: ADD JOURNAL ENTRY MODAL -->
     <div id="trade-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
         <div class="w-full max-w-lg glass-panel rounded-2xl shadow-2xl p-6 relative">
@@ -918,7 +773,7 @@
             </button>
             <h3 class="text-lg font-extrabold text-white mb-4">Catat Posisi Trading Jurnal</h3>
             
-            <form id="trade-form" onsubmit="handleTradeSubmit(event)" class="space-y-4 text-xs">
+            <form id="trade-form" onsubmit="handleTradeSubmit(event)" class="space-y-4 text-xs text-slate-300">
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-slate-400 mb-1.5 font-semibold">Pilih Pair</label>
@@ -983,10 +838,24 @@
         </div>
     </div>
 
+    <!-- CUSTOM GLASSY NOTIFICATION DIALOG COMPONENT (NO BROWSER POPUPS) -->
+    <div id="custom-dialog" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4 hidden">
+        <div class="w-full max-w-sm glass-panel rounded-2xl p-6 space-y-4 shadow-2xl border border-slate-800">
+            <div class="flex items-center gap-3 text-amber-500" id="dialog-header-icon">
+                <i data-lucide="alert-triangle" class="w-6 h-6" id="dialog-icon"></i>
+                <h4 class="font-bold text-sm text-white" id="dialog-title">Konfirmasi Tindakan</h4>
+            </div>
+            <p class="text-xs text-slate-300 leading-relaxed" id="dialog-message">Apakah Anda yakin ingin melakukan tindakan ini?</p>
+            <div class="flex justify-end gap-3 pt-2">
+                <button id="dialog-btn-cancel" class="px-4 py-2 bg-slate-900 hover:bg-slate-850 text-xs font-semibold text-slate-400 rounded-xl transition">Batal</button>
+                <button id="dialog-btn-confirm" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-xs font-semibold text-white rounded-xl transition">Yakin</button>
+            </div>
+        </div>
+    </div>
 
     <!-- JAVASCRIPT APP LOGIC & ENGINE -->
     <script>
-        // Initialize Global App State / Database
+        // Global App State
         let state = {
             users: [],
             currentUser: null,
@@ -1006,7 +875,7 @@
             }
         };
 
-        // Standard Default Data on Initial Run
+        // Static Default Data
         const defaultUsers = [
             { id: "u-1", name: "Trader Handal", email: "trader@gmail.com", password: "trader", role: "trader", avatar: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=100&q=80" },
             { id: "u-2", name: "Admin Utama Apex", email: "admin@gmail.com", password: "admin", role: "admin", avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" }
@@ -1028,14 +897,17 @@
         let pairChartRef = null;
         let riskRewardChartRef = null;
 
-        // On Page Load
         window.addEventListener('DOMContentLoaded', () => {
-            initDatabase();
-            checkSession();
-            lucide.createIcons();
+            try {
+                initDatabase();
+                checkSession();
+                lucide.createIcons();
+            } catch (err) {
+                console.error("Initialization failed: ", err);
+            }
         });
 
-        // Initialize Local Storage DB
+        // Initialize Local Storage database
         function initDatabase() {
             if (!localStorage.getItem('apex_users')) {
                 localStorage.setItem('apex_users', JSON.stringify(defaultUsers));
@@ -1053,7 +925,6 @@
                 localStorage.setItem('apex_branding', JSON.stringify(state.branding));
             }
 
-            // Sync JS state to localStorage
             state.users = JSON.parse(localStorage.getItem('apex_users'));
             state.accounts = JSON.parse(localStorage.getItem('apex_accounts'));
             state.trades = JSON.parse(localStorage.getItem('apex_trades'));
@@ -1063,257 +934,40 @@
             applyDynamicBranding();
         }
 
-        // Apply branding from database settings directly
+        // Apply visual customizations
         function applyDynamicBranding() {
             const b = state.branding;
-            const logoTexts = document.querySelectorAll('#auth-logo-text, #sidebar-web-name, #footer-web-copyright');
+            const logoTexts = document.querySelectorAll('#sidebar-web-name, #footer-web-copyright');
             
             if (logoTexts[0]) logoTexts[0].innerText = b.webName;
-            if (logoTexts[1]) logoTexts[1].innerText = b.webName;
-            if (logoTexts[2]) logoTexts[2].innerText = `© 2026 ${b.webName}. Hak Cipta Dilindungi.`;
+            if (logoTexts[1]) logoTexts[1].innerText = `© 2026 ${b.webName}. Hak Cipta Dilindungi.`;
 
-            // Inject custom theme color
             if (b.accentColor) {
                 document.documentElement.style.setProperty('--color-brand-600', b.accentColor);
-                tailwind.config.theme.extend.colors.brand[500] = b.accentColor;
-                tailwind.config.theme.extend.colors.brand[600] = b.accentColor;
+                if (typeof tailwind !== 'undefined') {
+                    tailwind.config.theme.extend.colors.brand[500] = b.accentColor;
+                    tailwind.config.theme.extend.colors.brand[600] = b.accentColor;
+                }
             }
         }
 
-        // Session Validation & AUTO-LOGIN bypass for flawless live preview experience
+        // Auto bypass authentication for best preview UX
         function checkSession() {
             const activeUser = sessionStorage.getItem('apex_current_user');
             if (activeUser) {
                 state.currentUser = JSON.parse(activeUser);
                 loadApplication();
             } else {
-                // AUTO LOGIN as "Trader Handal" immediately so user sees the fully populated dashboard without empty plain text screens!
+                // Auto-login immediately to show the full glorious dashboard instantly!
                 const bypassUser = state.users.find(u => u.email === "trader@gmail.com") || state.users[0];
                 sessionStorage.setItem('apex_current_user', JSON.stringify(bypassUser));
                 state.currentUser = bypassUser;
-                showNotification(`Auto-Logged In as ${bypassUser.name} for instant preview!`);
+                showNotification(`Masuk otomatis sebagai ${bypassUser.name} untuk pratinjau!`);
                 loadApplication();
             }
         }
 
-        // View Router (Switch views beautifully)
-        function switchView(viewId) {
-            const views = ['dashboard', 'account-manager', 'trade-journal', 'analytics', 'rules-builder', 'settings', 'admin-panel'];
-            views.forEach(v => {
-                const el = document.getElementById(`view-${v}`);
-                if (el) el.classList.add('hidden');
-            });
-
-            document.getElementById(`view-${viewId}`).classList.remove('hidden');
-
-            // Set active class on nav links
-            const navLinks = document.querySelectorAll('.nav-link');
-            navLinks.forEach(link => {
-                if (link.getAttribute('data-view') === viewId) {
-                    link.classList.add('bg-brand-600/20', 'text-brand-400', 'border-l-4', 'border-brand-500');
-                    link.classList.remove('text-slate-300');
-                } else {
-                    link.classList.remove('bg-brand-600/20', 'text-brand-400', 'border-l-4', 'border-brand-500');
-                    link.classList.add('text-slate-300');
-                }
-            });
-
-            // Specific View loaders
-            if (viewId === 'dashboard') {
-                renderDashboard();
-            } else if (viewId === 'account-manager') {
-                renderAccountManager();
-            } else if (viewId === 'trade-journal') {
-                renderTradeJournal();
-            } else if (viewId === 'analytics') {
-                renderAnalyticsCharts();
-            } else if (viewId === 'rules-builder') {
-                loadRulesBuilder();
-            } else if (viewId === 'settings') {
-                loadSettings();
-            } else if (viewId === 'admin-panel') {
-                loadAdminPanel();
-            }
-
-            // Close mobile sidebar on navigate
-            if (window.innerWidth < 768) {
-                document.getElementById('sidebar').classList.add('hidden');
-            }
-        }
-
-        // --- GLASSY NOTIFICATION CUSTOM COMPONENT ---
-        function showNotification(message, type = 'success') {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = `p-4 rounded-xl shadow-lg border text-xs font-semibold flex items-center gap-2 transition duration-300 transform translate-y-2 opacity-0 pointer-events-auto min-w-[250px]`;
-            
-            if (type === 'success') {
-                toast.className += ' bg-emerald-950/90 border-emerald-500/30 text-emerald-400';
-                toast.innerHTML = `<i data-lucide="check-circle-2" class="w-4 h-4"></i> ${message}`;
-            } else {
-                toast.className += ' bg-rose-950/90 border-rose-500/30 text-rose-400';
-                toast.innerHTML = `<i data-lucide="alert-triangle" class="w-4 h-4"></i> ${message}`;
-            }
-
-            container.appendChild(toast);
-            lucide.createIcons();
-
-            setTimeout(() => {
-                toast.classList.remove('translate-y-2', 'opacity-0');
-            }, 10);
-
-            setTimeout(() => {
-                toast.classList.add('translate-y-[-10px]', 'opacity-0');
-                setTimeout(() => toast.remove(), 300);
-            }, 4000);
-        }
-
-        // --- GLASSY CONFIRMATION DIALOG DIRECT MODULE (NO BROWSER POPUPS) ---
-        function showCustomDialog(title, message, isConfirm = true, onConfirmCallback = null) {
-            const modal = document.getElementById('custom-dialog');
-            const titleEl = document.getElementById('dialog-title');
-            const msgEl = document.getElementById('dialog-message');
-            const btnCancel = document.getElementById('dialog-btn-cancel');
-            const btnConfirm = document.getElementById('dialog-btn-confirm');
-            const iconEl = document.getElementById('dialog-icon');
-
-            titleEl.innerText = title;
-            msgEl.innerText = message;
-
-            if (isConfirm) {
-                btnCancel.classList.remove('hidden');
-                iconEl.setAttribute('data-lucide', 'help-circle');
-                iconEl.className = "w-6 h-6 text-indigo-400";
-            } else {
-                btnCancel.classList.add('hidden');
-                iconEl.setAttribute('data-lucide', 'info');
-                iconEl.className = "w-6 h-6 text-amber-500";
-            }
-
-            // Clone to strip old event handlers safely
-            const newConfirm = btnConfirm.cloneNode(true);
-            btnConfirm.parentNode.replaceChild(newConfirm, btnConfirm);
-
-            const newCancel = btnCancel.cloneNode(true);
-            btnCancel.parentNode.replaceChild(newCancel, btnCancel);
-
-            newConfirm.addEventListener('click', () => {
-                modal.classList.add('hidden');
-                if (onConfirmCallback) onConfirmCallback();
-            });
-
-            newCancel.addEventListener('click', () => {
-                modal.classList.add('hidden');
-            });
-
-            modal.classList.remove('hidden');
-            lucide.createIcons();
-        }
-
-        // --- AUTH SECTION ---
-        function showAuthTab(tab) {
-            document.getElementById('login-form').classList.add('hidden');
-            document.getElementById('register-form').classList.add('hidden');
-            document.getElementById('forgot-form').classList.add('hidden');
-            document.getElementById('reset-password-area').classList.add('hidden');
-            document.getElementById('btn-forgot-verify').classList.remove('hidden');
-
-            if (tab === 'login') {
-                document.getElementById('login-form').classList.remove('hidden');
-                document.getElementById('auth-subtitle').innerText = "Platform Manajemen Trading Funded Profesional";
-            } else if (tab === 'register') {
-                document.getElementById('register-form').classList.remove('hidden');
-                document.getElementById('auth-subtitle').innerText = "Mulai Kelola Kualitas Trade & Akun Prop Firm Kamu";
-            } else if (tab === 'forgot') {
-                document.getElementById('forgot-form').classList.remove('hidden');
-                document.getElementById('auth-subtitle').innerText = "Sistem Pemulihan Kredensial Pengguna";
-            }
-        }
-
-        // Handle Login Submission
-        document.getElementById('login-form').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const email = document.getElementById('login-email').value;
-            const pass = document.getElementById('login-password').value;
-
-            const user = state.users.find(u => u.email === email && u.password === pass);
-            if (user) {
-                sessionStorage.setItem('apex_current_user', JSON.stringify(user));
-                state.currentUser = user;
-                showNotification(`Selamat datang kembali, ${user.name}!`);
-                loadApplication();
-            } else {
-                showNotification('Email atau Password salah!', 'error');
-            }
-        });
-
-        // Handle Register Submission
-        document.getElementById('register-form').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const name = document.getElementById('reg-name').value;
-            const email = document.getElementById('reg-email').value;
-            const password = document.getElementById('reg-password').value;
-            const role = document.getElementById('reg-role').value;
-
-            if (state.users.some(u => u.email === email)) {
-                showNotification('Email sudah terdaftar di sistem!', 'error');
-                return;
-            }
-
-            const newUser = {
-                id: 'u-' + Date.now(),
-                name,
-                email,
-                password,
-                role,
-                avatar: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=100&q=80"
-            };
-
-            state.users.push(newUser);
-            localStorage.setItem('apex_users', JSON.stringify(state.users));
-            showNotification('Pendaftaran akun berhasil! Silakan login.');
-            showAuthTab('login');
-        });
-
-        // Handle Password Reset Flow (Simulation)
-        document.getElementById('forgot-form').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const email = document.getElementById('forgot-email').value;
-            const user = state.users.find(u => u.email === email);
-
-            if (user) {
-                document.getElementById('reset-password-area').classList.remove('hidden');
-                document.getElementById('btn-forgot-verify').classList.add('hidden');
-                showNotification('Email terverifikasi. Silakan masukkan password baru!');
-            } else {
-                showNotification('Email tidak ditemukan!', 'error');
-            }
-        });
-
-        function handlePasswordReset() {
-            const email = document.getElementById('forgot-email').value;
-            const newPass = document.getElementById('reset-new-password').value;
-
-            if (newPass.length < 6) {
-                showNotification('Password minimal berukuran 6 karakter!', 'error');
-                return;
-            }
-
-            const userIdx = state.users.findIndex(u => u.email === email);
-            if (userIdx !== -1) {
-                state.users[userIdx].password = newPass;
-                localStorage.setItem('apex_users', JSON.stringify(state.users));
-                showNotification('Password berhasil diperbarui! Silakan login.');
-                showAuthTab('login');
-            }
-        }
-
-        // --- DASHBOARD & CORE APP LOGIC ---
         function loadApplication() {
-            document.getElementById('auth-container').classList.add('hidden');
-            document.getElementById('main-app').classList.remove('hidden');
-
-            // Populate Sidebar Profile Details
             document.getElementById('sidebar-user-name').innerText = state.currentUser.name;
             document.getElementById('sidebar-user-role').innerText = state.currentUser.role === 'admin' ? 'SYSTEM ADMIN' : 'PRO TRADER';
             document.getElementById('sidebar-avatar').src = state.currentUser.avatar || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=100&q=80";
@@ -1330,9 +984,111 @@
             switchView('dashboard');
         }
 
-        // Render Global Selector Accounts
+        function switchView(viewId) {
+            const views = ['dashboard', 'account-manager', 'trade-journal', 'analytics', 'rules-builder', 'settings', 'admin-panel'];
+            views.forEach(v => {
+                const el = document.getElementById(`view-${v}`);
+                if (el) el.classList.add('hidden');
+            });
+
+            const targetView = document.getElementById(`view-${viewId}`);
+            if (targetView) targetView.classList.remove('hidden');
+
+            const navLinks = document.querySelectorAll('.nav-link');
+            navLinks.forEach(link => {
+                if (link.getAttribute('data-view') === viewId) {
+                    link.classList.add('bg-brand-600/20', 'text-brand-400', 'border-l-4', 'border-brand-500');
+                    link.classList.remove('text-slate-300');
+                } else {
+                    link.classList.remove('bg-brand-600/20', 'text-brand-400', 'border-l-4', 'border-brand-500');
+                    link.classList.add('text-slate-300');
+                }
+            });
+
+            // Trigger specific rendering modules safely
+            try {
+                if (viewId === 'dashboard') {
+                    renderDashboard();
+                } else if (viewId === 'account-manager') {
+                    renderAccountManager();
+                } else if (viewId === 'trade-journal') {
+                    renderTradeJournal();
+                } else if (viewId === 'analytics') {
+                    renderAnalyticsCharts();
+                } else if (viewId === 'rules-builder') {
+                    loadRulesBuilder();
+                } else if (viewId === 'settings') {
+                    loadSettings();
+                } else if (viewId === 'admin-panel') {
+                    loadAdminPanel();
+                }
+            } catch (err) {
+                console.error(`Error loading view ${viewId}: `, err);
+            }
+
+            if (window.innerWidth < 768) {
+                document.getElementById('sidebar').classList.add('-translate-x-full');
+            }
+        }
+
+        function showNotification(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `p-4 rounded-xl shadow-lg border text-xs font-semibold flex items-center gap-2 transition duration-300 transform translate-y-2 opacity-0 pointer-events-auto min-w-[250px]`;
+            
+            if (type === 'success') {
+                toast.className += ' bg-emerald-950/90 border-emerald-500/30 text-emerald-400';
+                toast.innerHTML = `<i data-lucide="check-circle-2" class="w-4 h-4"></i> ${message}`;
+            } else {
+                toast.className += ' bg-rose-950/90 border-rose-500/30 text-rose-400';
+                toast.innerHTML = `<i data-lucide="alert-triangle" class="w-4 h-4"></i> ${message}`;
+            }
+
+            container.appendChild(toast);
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-[-10px]', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+
+        function showCustomDialog(title, message, onConfirmCallback) {
+            const modal = document.getElementById('custom-dialog');
+            const titleEl = document.getElementById('dialog-title');
+            const msgEl = document.getElementById('dialog-message');
+            const btnCancel = document.getElementById('dialog-btn-cancel');
+            const btnConfirm = document.getElementById('dialog-btn-confirm');
+
+            titleEl.innerText = title;
+            msgEl.innerText = message;
+
+            const newConfirm = btnConfirm.cloneNode(true);
+            btnConfirm.parentNode.replaceChild(newConfirm, btnConfirm);
+
+            const newCancel = btnCancel.cloneNode(true);
+            btnCancel.parentNode.replaceChild(newCancel, btnCancel);
+
+            newConfirm.addEventListener('click', () => {
+                modal.classList.add('hidden');
+                if (onConfirmCallback) onConfirmCallback();
+            });
+
+            newCancel.addEventListener('click', () => {
+                modal.classList.add('hidden');
+            });
+
+            modal.classList.remove('hidden');
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
         function populateGlobalAccountSelector() {
             const selector = document.getElementById('global-account-selector');
+            if (!selector) return;
             selector.innerHTML = '';
 
             const visibleAccounts = state.currentUser.role === 'admin' 
@@ -1376,7 +1132,6 @@
             renderDashboard();
         }
 
-        // Render Dashboard Cards & Statistics Data
         function renderDashboard() {
             const acc = state.accounts.find(a => a.id === state.activeAccountId);
             if (!acc) return;
@@ -1476,12 +1231,12 @@
             document.getElementById('rule-dash-max-trade').innerText = `${state.rules.maxTradesPerDay} Trades`;
             document.getElementById('rule-dash-risk').innerText = `${state.rules.riskPerTradeLimit}%`;
 
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
         }
 
-        // --- ACCOUNT MANAGER VIEW ---
         function renderAccountManager() {
             const container = document.getElementById('account-list-container');
+            if (!container) return;
             container.innerHTML = '';
 
             const userAccounts = state.accounts.filter(a => a.userId === state.currentUser.id);
@@ -1517,7 +1272,7 @@
                         </div>
                     </div>
 
-                    <div class="pt-2 border-t border-slate-850 flex justify-between items-center">
+                    <div class="pt-2 border-t border-slate-800 flex justify-between items-center">
                         <div class="text-xs">
                             <span class="text-slate-500 text-[10px] uppercase block">Balance Aktif</span>
                             <span class="font-black text-emerald-400 text-sm">$${Number(acc.balance).toLocaleString()}</span>
@@ -1530,7 +1285,7 @@
                 container.appendChild(card);
             });
 
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
         }
 
         function openAddAccountModal() {
@@ -1606,7 +1361,7 @@
                 showNotification('Gagal! Anda harus memiliki setidaknya satu akun aktif.', 'error');
                 return;
             }
-            showCustomDialog("Hapus Akun?", "Apakah Anda yakin ingin menghapus akun trading ini beserta semua riwayat jurnalnya?", true, () => {
+            showCustomDialog("Hapus Akun?", "Apakah Anda yakin ingin menghapus akun trading ini beserta semua riwayat jurnalnya?", () => {
                 state.accounts = state.accounts.filter(a => a.id !== accId);
                 state.trades = state.trades.filter(t => t.accountId !== accId);
                 
@@ -1620,9 +1375,9 @@
             });
         }
 
-        // --- TRADE JOURNAL ENGINE ---
         function renderTradeJournal() {
             const tbody = document.getElementById('journal-table-body');
+            if (!tbody) return;
             tbody.innerHTML = '';
 
             const activeAcc = state.accounts.find(a => a.id === state.activeAccountId);
@@ -1692,7 +1447,7 @@
                 tbody.appendChild(row);
             });
 
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
         }
 
         function filterJournal() {
@@ -1725,7 +1480,7 @@
 
             const riskOnThisTrade = Math.abs(pnl) / activeAcc.startingBalance * 100;
             if (pnl < 0 && riskOnThisTrade > state.rules.riskPerTradeLimit) {
-                showCustomDialog("Risiko Terlalu Besar!", `Kerugian ini (${riskOnThisTrade.toFixed(2)}%) melebihi limit maksimum yang diijinkan oleh Rules Builder (${state.rules.riskPerTradeLimit}%). Apakah Anda ingin mengabaikan warning ini?`, true, () => {
+                showCustomDialog("Risiko Terlalu Besar!", `Kerugian ini (${riskOnThisTrade.toFixed(2)}%) melebihi limit maksimum yang diijinkan oleh Rules Builder (${state.rules.riskPerTradeLimit}%). Tetap simpan?`, () => {
                     saveValidatedTrade(pair, type, lot, entry, pnl, sl, tp, image, notes, activeAcc);
                 });
             } else {
@@ -1763,7 +1518,7 @@
         }
 
         function handleDeleteTrade(tradeId) {
-            showCustomDialog("Hapus Trade?", "Apakah Anda yakin ingin menghapus record transaksi ini? Saldo akun akan dikalkulasi ulang.", true, () => {
+            showCustomDialog("Hapus Trade?", "Apakah Anda yakin ingin menghapus record transaksi ini? Saldo akun akan dikalkulasi ulang.", () => {
                 const trade = state.trades.find(t => t.id === tradeId);
                 if (trade) {
                     const acc = state.accounts.find(a => a.id === trade.accountId);
@@ -1785,13 +1540,18 @@
 
         function viewSetupImageModal(url) {
             const w = window.open();
-            w.document.write(`<img src="${url}" style="max-width:100%; border-radius:10px; margin:auto;" />`);
-            w.document.title = "View Technical Setup Image";
+            if (w) {
+                w.document.write(`<img src="${url}" style="max-width:100%; border-radius:10px; margin:auto;" />`);
+                w.document.title = "View Technical Setup Image";
+            }
         }
 
-
-        // --- ANALYTICS VIEW (CHARTJS) ---
         function renderAnalyticsCharts() {
+            if (typeof Chart === 'undefined') {
+                console.warn("ChartJS library missing");
+                return;
+            }
+
             const activeAcc = state.accounts.find(a => a.id === state.activeAccountId);
             if (!activeAcc) return;
 
@@ -1813,31 +1573,33 @@
             });
 
             // 1. Line Chart: Daily Profit Cumulative
-            const ctxDaily = document.getElementById('chart-daily-profit').getContext('2d');
-            dailyProfitChartRef = new Chart(ctxDaily, {
-                type: 'line',
-                data: {
-                    labels: profitDates.length > 0 ? profitDates : ['Belum Ada Trades'],
-                    datasets: [{
-                        label: 'Profit Kumulatif ($)',
-                        data: profitAmounts.length > 0 ? profitAmounts : [0],
-                        borderColor: '#6366f1',
-                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
-                        tension: 0.3,
-                        fill: true,
-                        borderWidth: 3
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
-                        x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+            const ctxDaily = document.getElementById('chart-daily-profit');
+            if (ctxDaily) {
+                dailyProfitChartRef = new Chart(ctxDaily.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: profitDates.length > 0 ? profitDates : ['Belum Ada Trades'],
+                        datasets: [{
+                            label: 'Profit Kumulatif ($)',
+                            data: profitAmounts.length > 0 ? profitAmounts : [0],
+                            borderColor: '#6366f1',
+                            backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                            tension: 0.3,
+                            fill: true,
+                            borderWidth: 3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
+                            x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+                        }
                     }
-                }
-            });
+                });
+            }
 
             // 2. Win rate Doughnut Chart
             let wins = 0;
@@ -1847,25 +1609,27 @@
                 else losses++;
             });
 
-            const ctxWinrate = document.getElementById('chart-winrate-doughnut').getContext('2d');
-            winrateChartRef = new Chart(ctxWinrate, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Wins', 'Losses'],
-                    datasets: [{
-                        data: [wins, losses],
-                        backgroundColor: ['#10b981', '#ef4444'],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'bottom', labels: { color: '#94a3b8' } }
+            const ctxWinrate = document.getElementById('chart-winrate-doughnut');
+            if (ctxWinrate) {
+                winrateChartRef = new Chart(ctxWinrate.getContext('2d'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Wins', 'Losses'],
+                        datasets: [{
+                            data: [wins, losses],
+                            backgroundColor: ['#10b981', '#ef4444'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom', labels: { color: '#94a3b8' } }
+                        }
                     }
-                }
-            });
+                });
+            }
 
             // 3. Pair volume Distribution
             const pairCounts = {};
@@ -1873,55 +1637,57 @@
                 pairCounts[t.pair] = (pairCounts[t.pair] || 0) + 1;
             });
 
-            const ctxPair = document.getElementById('chart-pair-distribution').getContext('2d');
-            pairChartRef = new Chart(ctxPair, {
-                type: 'bar',
-                data: {
-                    labels: Object.keys(pairCounts).length > 0 ? Object.keys(pairCounts) : ['No Data'],
-                    datasets: [{
-                        label: 'Jumlah Transaksi',
-                        data: Object.values(pairCounts).length > 0 ? Object.values(pairCounts) : [0],
-                        backgroundColor: '#a78bfa'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: { grid: { color: 'rgba(255,255,255,0.05)' } },
-                        x: { grid: { display: false } }
+            const ctxPair = document.getElementById('chart-pair-distribution');
+            if (ctxPair) {
+                pairChartRef = new Chart(ctxPair.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: Object.keys(pairCounts).length > 0 ? Object.keys(pairCounts) : ['No Data'],
+                        datasets: [{
+                            label: 'Jumlah Transaksi',
+                            data: Object.values(pairCounts).length > 0 ? Object.values(pairCounts) : [0],
+                            backgroundColor: '#a78bfa'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: { grid: { color: 'rgba(255,255,255,0.05)' } },
+                            x: { grid: { display: false } }
+                        }
                     }
-                }
-            });
+                });
+            }
 
             // 4. Bar Chart: Risk vs Reward Evaluation
-            const ctxRR = document.getElementById('chart-risk-reward').getContext('2d');
-            riskRewardChartRef = new Chart(ctxRR, {
-                type: 'radar',
-                data: {
-                    labels: ['EURUSD', 'GBPUSD', 'XAUUSD', 'US30', 'NDX100'],
-                    datasets: [{
-                        label: 'Target RR',
-                        data: [2, 2.5, 3, 2, 3.5],
-                        borderColor: '#10b981',
-                        backgroundColor: 'rgba(16, 185, 129, 0.1)'
-                    }, {
-                        label: 'Realisasi RRR',
-                        data: [1.8, 2.2, 2.8, 1.5, 3.0],
-                        borderColor: '#6366f1',
-                        backgroundColor: 'rgba(99, 102, 241, 0.1)'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { labels: { color: '#94a3b8' } } }
-                }
-            });
+            const ctxRR = document.getElementById('chart-risk-reward');
+            if (ctxRR) {
+                riskRewardChartRef = new Chart(ctxRR.getContext('2d'), {
+                    type: 'radar',
+                    data: {
+                        labels: ['EURUSD', 'GBPUSD', 'XAUUSD', 'US30', 'NDX100'],
+                        datasets: [{
+                            label: 'Target RR',
+                            data: [2, 2.5, 3, 2, 3.5],
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)'
+                        }, {
+                            label: 'Realisasi RRR',
+                            data: [1.8, 2.2, 2.8, 1.5, 3.0],
+                            borderColor: '#6366f1',
+                            backgroundColor: 'rgba(99, 102, 241, 0.1)'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { labels: { color: '#94a3b8' } } }
+                    }
+                });
+            }
         }
 
-
-        // --- RULES BUILDER ---
         function loadRulesBuilder() {
             document.getElementById('rules-input-daily-dd').value = state.rules.dailyDDLimit;
             document.getElementById('rules-input-max-dd').value = state.rules.maxDDLimit;
@@ -1940,8 +1706,6 @@
             renderDashboard();
         }
 
-
-        // --- SETTINGS VIEW ---
         function loadSettings() {
             document.getElementById('settings-input-name').value = state.currentUser.name;
             document.getElementById('settings-input-email').value = state.currentUser.email;
@@ -1985,8 +1749,6 @@
             applyDynamicBranding();
         }
 
-
-        // --- MAIN ADMIN PANEL LOGIC ---
         function loadAdminPanel() {
             const activeAcc = state.accounts.find(a => a.id === state.activeAccountId);
             if (activeAcc) {
@@ -1997,6 +1759,7 @@
             document.getElementById('admin-overide-max-trade').value = state.rules.maxTradesPerDay;
 
             const tbody = document.getElementById('admin-user-table-body');
+            if (!tbody) return;
             tbody.innerHTML = '';
             
             document.getElementById('admin-users-count').innerText = `Total User: ${state.users.length}`;
@@ -2068,7 +1831,7 @@
         }
 
         function confirmResetAllData() {
-            showCustomDialog("Setel Ulang Aplikasi?", "Apakah Anda yakin ingin menghapus semua database browser dan menyetel ulang dari awal?", true, () => {
+            showCustomDialog("Setel Ulang Aplikasi?", "Apakah Anda yakin ingin menghapus semua database browser dan menyetel ulang dari awal?", () => {
                 localStorage.clear();
                 sessionStorage.clear();
                 showNotification('Database dibersihkan. Memuat ulang sistem...');
@@ -2095,8 +1858,6 @@
             }
         }
 
-
-        // --- DATA EXPORTS SYSTEM ---
         function exportToCSV() {
             const activeAcc = state.accounts.find(a => a.id === state.activeAccountId);
             if (!activeAcc) return;
@@ -2124,6 +1885,8 @@
             if (!activeAcc) return;
 
             const w = window.open();
+            if (!w) return;
+
             let journalRows = '';
             const accTrades = state.trades.filter(t => t.accountId === activeAcc.id);
             
@@ -2159,16 +1922,14 @@
                         </thead>
                         <tbody>${journalRows}</tbody>
                     </table>
-                    <script>window.print();<\/script>
                 </body>
                 </html>
             `);
             w.document.close();
+            w.print();
             showNotification('Memproses cetak PDF trading report...');
         }
 
-
-        // --- UI VISUAL HELPERS ---
         function toggleDarkMode() {
             const html = document.documentElement;
             const btnIcon = document.getElementById('theme-icon');
@@ -2184,26 +1945,24 @@
                 btnIcon.setAttribute('data-lucide', 'moon');
                 showNotification('Beralih ke Light Mode.');
             }
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
         }
 
         function toggleMobileSidebar() {
             const sidebar = document.getElementById('sidebar');
-            if (sidebar.classList.contains('hidden')) {
-                sidebar.classList.remove('hidden');
-                sidebar.classList.add('fixed', 'inset-y-0', 'left-0', 'shadow-2xl');
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
             } else {
-                sidebar.classList.add('hidden');
-                sidebar.classList.remove('fixed', 'inset-y-0', 'left-0', 'shadow-2xl');
+                sidebar.classList.add('-translate-x-full');
             }
         }
 
         function handleLogout() {
-            showCustomDialog("Keluar Aplikasi?", "Apakah Anda yakin ingin keluar dari terminal dashboard?", true, () => {
+            showCustomDialog("Keluar Terminal?", "Apakah Anda yakin ingin keluar dari terminal dashboard saat ini?", () => {
                 sessionStorage.removeItem('apex_current_user');
                 state.currentUser = null;
                 showNotification('Berhasil keluar sistem.');
-                checkSession();
+                window.location.reload();
             });
         }
     </script>
