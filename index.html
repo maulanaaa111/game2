@@ -1,1291 +1,2022 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  TrendingUp, 
-  Shield, 
-  DollarSign, 
-  Users, 
-  Activity, 
-  Award, 
-  ArrowRight, 
-  CheckCircle, 
-  XCircle, 
-  LineChart, 
-  BookOpen, 
-  Settings, 
-  LogOut, 
-  User, 
-  Lock, 
-  Mail, 
-  Plus, 
-  ChevronRight, 
-  AlertTriangle, 
-  PieChart as PieIcon, 
-  Menu, 
-  X,
-  CreditCard,
-  Layers,
-  HelpCircle
-} from 'lucide-react';
-import { 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer 
-} from 'recharts';
-
-
-// Placeholder untuk Firebase config lo nanti, lek!
-// Cukup ganti isi objek ini dengan config asli lo dari Firebase Console.
-const firebaseConfigPlaceholder = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
-};
-
-// Deteksi apakah config bawaan sistem sudah terpasang
-let isFirebaseConfigured = false;
-try {
-  if (typeof __firebase_config !== 'undefined' && __firebase_config) {
-    isFirebaseConfigured = true;
-  }
-} catch (e) {
-  isFirebaseConfigured = false;
-}
-
-
-// Data Akun Challenge yang Tersedia
-const CHALLENGE_PACKAGES = [
-  { id: 'ch-5k', size: 5000, fee: 39, target: 400, dailyLimit: 250, maxLimit: 500, type: 'Evaluation' },
-  { id: 'ch-10k', size: 10000, fee: 79, target: 800, dailyLimit: 500, maxLimit: 1000, type: 'Evaluation' },
-  { id: 'ch-25k', size: 25000, fee: 169, target: 2000, dailyLimit: 1250, maxLimit: 2500, type: 'Evaluation' },
-  { id: 'ch-50k', size: 50000, fee: 299, target: 4000, dailyLimit: 2500, maxLimit: 5000, type: 'Evaluation' },
-  { id: 'ch-100k', size: 100000, fee: 499, target: 8000, dailyLimit: 5000, maxLimit: 10000, type: 'Evaluation' },
-];
-
-// Data Awal Akun Aktif User (Mock data)
-const INITIAL_ACCOUNTS = [
-  {
-    id: 'ACC-884920',
-    type: 'Phase 1 Evaluation',
-    size: 50000,
-    balance: 51240,
-    equity: 51180,
-    dailyLoss: 120,
-    maxLoss: 120,
-    profitTarget: 4000,
-    dailyLimit: 2500,
-    maxLimit: 5000,
-    status: 'Active',
-    startDate: '2026-05-15',
-    daysTraded: 8,
-    minDaysRequired: 5,
-    metrics: [
-      { name: 'Day 1', balance: 50000, equity: 50000 },
-      { name: 'Day 2', balance: 50350, equity: 50200 },
-      { name: 'Day 3', balance: 49800, equity: 49600 },
-      { name: 'Day 4', balance: 50500, equity: 50450 },
-      { name: 'Day 5', balance: 50900, equity: 50800 },
-      { name: 'Day 6', balance: 50750, equity: 50600 },
-      { name: 'Day 7', balance: 51400, equity: 51300 },
-      { name: 'Day 8', balance: 51240, equity: 51180 },
-    ],
-    trades: [
-      { id: 'T-101', pair: 'EURUSD', type: 'BUY', lots: 2.0, openPrice: 1.0854, closePrice: 1.0894, profit: 800, time: '2026-05-22 14:20' },
-      { id: 'T-102', pair: 'XAUUSD', type: 'SELL', lots: 1.5, openPrice: 2345.20, closePrice: 2351.80, profit: -990, time: '2026-05-23 16:05' },
-      { id: 'T-103', pair: 'GBPUSD', type: 'BUY', lots: 3.0, openPrice: 1.2680, closePrice: 1.2725, profit: 1350, time: '2026-05-24 10:15' },
-      { id: 'T-104', pair: 'BTCUSD', type: 'BUY', lots: 0.5, openPrice: 67200, closePrice: 67360, profit: 80, time: '2026-05-26 21:40' },
-    ]
-  },
-  {
-    id: 'ACC-110294',
-    type: 'Phase 2 Express',
-    size: 10000,
-    balance: 9850,
-    equity: 9850,
-    dailyLoss: 150,
-    maxLoss: 150,
-    profitTarget: 800,
-    dailyLimit: 500,
-    maxLimit: 1000,
-    status: 'Violated',
-    startDate: '2026-05-01',
-    daysTraded: 3,
-    minDaysRequired: 5,
-    metrics: [
-      { name: 'Day 1', balance: 10000, equity: 10000 },
-      { name: 'Day 2', balance: 10150, equity: 10050 },
-      { name: 'Day 3', balance: 9850, equity: 9850 },
-    ],
-    trades: [
-      { id: 'T-201', pair: 'XAUUSD', type: 'BUY', lots: 1.0, openPrice: 2330.00, closePrice: 2331.50, profit: 150, time: '2026-05-02 09:10' },
-      { id: 'T-202', pair: 'GBPUSD', type: 'BUY', lots: 2.0, openPrice: 1.2710, closePrice: 1.2695, profit: -300, time: '2026-05-03 15:30' },
-    ]
-  }
-];
-
-export default function App() {
-  // Navigation: 'landing' | 'login' | 'register' | 'dashboard'
-  const [currentView, setCurrentView] = useState('landing');
-  const [activeTab, setActiveTab] = useState('overview'); // dashboard tabs: overview, journal, shop, rules
-  const [user, setUser] = useState(null); // Simulated user state
-  const [accounts, setAccounts] = useState(INITIAL_ACCOUNTS);
-  const [selectedAccount, setSelectedAccount] = useState(INITIAL_ACCOUNTS[0]);
-  const [selectedPackage, setSelectedPackage] = useState(CHALLENGE_PACKAGES[3]); // Default $50k package on landing
-  
-  // Auth Form states
-  const [authEmail, setAuthEmail] = useState('');
-  const [authPassword, setAuthPassword] = useState('');
-  const [authName, setAuthName] = useState('');
-  const [authError, setAuthError] = useState('');
-
-  // Mobile menu control
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  // New trade simulation states (for showcasing interactivity)
-  const [simPair, setSimPair] = useState('XAUUSD');
-  const [simType, setSimType] = useState('BUY');
-  const [simLots, setSimLots] = useState('1.0');
-  const [simProfit, setSimProfit] = useState('150');
-
-  // Load user session from local storage if existing
-  useEffect(() => {
-    const savedUser = localStorage.getItem('nexus_user');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-      setCurrentView('dashboard');
-    }
-  }, []);
-
-  const handleLogin = (e) => {
-    e.preventDefault();
-    setAuthError('');
-    if (!authEmail || !authPassword) {
-      setAuthError('Isi semua kolom login ya, lek!');
-      return;
-    }
-    // Simple simulated authentication
-    const simulatedUser = {
-      uid: 'user_' + Math.random().toString(36).substr(2, 9),
-      email: authEmail,
-      displayName: authEmail.split('@')[0].toUpperCase(),
-    };
-    setUser(simulatedUser);
-    localStorage.setItem('nexus_user', JSON.stringify(simulatedUser));
-    setCurrentView('dashboard');
-  };
-
-  const handleRegister = (e) => {
-    e.preventDefault();
-    setAuthError('');
-    if (!authEmail || !authPassword || !authName) {
-      setAuthError('Wajib isi semua data buat daftar akun, lek.');
-      return;
-    }
-    const simulatedUser = {
-      uid: 'user_' + Math.random().toString(36).substr(2, 9),
-      email: authEmail,
-      displayName: authName,
-    };
-    setUser(simulatedUser);
-    localStorage.setItem('nexus_user', JSON.stringify(simulatedUser));
-    setCurrentView('dashboard');
-  };
-
-  const handleLogout = () => {
-    setUser(null);
-    localStorage.removeItem('nexus_user');
-    setCurrentView('landing');
-  };
-
-  const handlePurchaseChallenge = (pkg) => {
-    if (!user) {
-      setCurrentView('login');
-      return;
-    }
-
-    const newAccId = 'ACC-' + Math.floor(100000 + Math.random() * 90000);
-    const newAccount = {
-      id: newAccId,
-      type: `${pkg.type} Phase 1`,
-      size: pkg.size,
-      balance: pkg.size,
-      equity: pkg.size,
-      dailyLoss: 0,
-      maxLoss: 0,
-      profitTarget: pkg.target,
-      dailyLimit: pkg.dailyLimit,
-      maxLimit: pkg.maxLimit,
-      status: 'Active',
-      startDate: new Date().toISOString().split('T')[0],
-      daysTraded: 0,
-      minDaysRequired: 5,
-      metrics: [
-        { name: 'Day 0', balance: pkg.size, equity: pkg.size }
-      ],
-      trades: []
-    };
-
-    setAccounts([newAccount, ...accounts]);
-    setSelectedAccount(newAccount);
-    setActiveTab('overview');
-    alert(`Sukses membeli paket $${pkg.size.toLocaleString()}! Akun challenge Anda telah dibuat.`);
-  };
-
-  // Simulate placing a mock trade to dynamically see equity and metric changes
-  const handleAddSimulatedTrade = (e) => {
-    e.preventDefault();
-    const pnl = parseFloat(simProfit);
-    if (isNaN(pnl)) return;
-
-    const updatedAccount = { ...selectedAccount };
-    const newTradeId = 'T-' + Math.floor(300 + Math.random() * 700);
-    const newTrade = {
-      id: newTradeId,
-      pair: simPair,
-      type: simType,
-      lots: parseFloat(simLots) || 1.0,
-      openPrice: simPair === 'XAUUSD' ? 2350.00 : 1.0850,
-      closePrice: simPair === 'XAUUSD' ? 2351.50 : 1.0865,
-      profit: pnl,
-      time: new Date().toISOString().replace('T', ' ').substring(0, 16)
-    };
-
-    // Update account calculations
-    updatedAccount.trades = [newTrade, ...updatedAccount.trades];
-    updatedAccount.balance += pnl;
-    updatedAccount.equity = updatedAccount.balance; // Simply match equity for simulation
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus Funding - Next-Gen Prop Firm Platform</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js for beautiful trading analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     
-    // Update daily and max losses if trade was negative
-    if (pnl < 0) {
-      const absoluteLoss = Math.abs(pnl);
-      updatedAccount.dailyLoss += absoluteLoss;
-      updatedAccount.maxLoss += absoluteLoss;
-    }
-
-    // Check violations
-    if (updatedAccount.dailyLoss >= updatedAccount.dailyLimit || updatedAccount.maxLoss >= updatedAccount.maxLimit) {
-      updatedAccount.status = 'Violated';
-    } else if (updatedAccount.balance - updatedAccount.size >= updatedAccount.profitTarget) {
-      updatedAccount.status = 'Passed';
-    }
-
-    // Add new coordinate to metric chart
-    const currentDayIndex = updatedAccount.metrics.length;
-    updatedAccount.metrics = [
-      ...updatedAccount.metrics,
-      { name: `Trade ${currentDayIndex}`, balance: updatedAccount.balance, equity: updatedAccount.equity }
-    ];
-
-    // Apply updates to list and selection
-    const updatedAccountsList = accounts.map(acc => acc.id === updatedAccount.id ? updatedAccount : acc);
-    setAccounts(updatedAccountsList);
-    setSelectedAccount(updatedAccount);
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .font-mono-custom {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        /* Custom scrollbar to match elite dark theme */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #020617;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #3b82f6;
+        }
+        /* Glowing neon animations */
+        .neon-glow-blue {
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.25);
+        }
+        .neon-glow-indigo {
+            box-shadow: 0 0 25px rgba(99, 102, 241, 0.3);
+        }
+        /* Marquee slider animation */
+        @keyframes marquee {
+            0% { transform: translateX(0%); }
+            100% { transform: translateX(-50%); }
+        }
+        .animate-marquee {
+            animation: marquee 30s linear infinite;
+        }
+    </style>
     
-    // Reset simulation input
-    setSimProfit('150');
-  };
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        slate: {
+                            950: '#020617'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-blue-600 selection:text-white flex flex-col justify-between overflow-x-hidden">
 
-  return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-blue-600 selection:text-white">
-      {/* HEADER NAVBAR */}
-      <header className="sticky top-0 z-50 backdrop-blur-md bg-slate-950/80 border-b border-slate-900 px-4 lg:px-8 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => setCurrentView('landing')}>
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
-              <TrendingUp className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <span className="text-xl font-bold tracking-tight bg-gradient-to-r from-white via-slate-200 to-blue-400 bg-clip-text text-transparent">
-                NEXUS
-              </span>
-              <span className="text-xs block text-blue-500 font-semibold tracking-widest -mt-1">FUNDING</span>
-            </div>
-          </div>
+    <!-- Custom Toast Notification System Container -->
+    <div id="toast-container" class="fixed top-5 right-5 z-[9999] flex flex-col gap-3 max-w-sm w-full pointer-events-none"></div>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-8">
-            <button onClick={() => { setCurrentView('landing'); setTimeout(() => document.getElementById('challenges')?.scrollIntoView({behavior: 'smooth'}), 100); }} className="text-sm font-medium text-slate-300 hover:text-white transition-colors">Program</button>
-            <button onClick={() => { setCurrentView('landing'); setTimeout(() => document.getElementById('rules')?.scrollIntoView({behavior: 'smooth'}), 100); }} className="text-sm font-medium text-slate-300 hover:text-white transition-colors">Aturan Main</button>
-            <button onClick={() => { setCurrentView('landing'); setTimeout(() => document.getElementById('statistics')?.scrollIntoView({behavior: 'smooth'}), 100); }} className="text-sm font-medium text-slate-300 hover:text-white transition-colors">Statistik</button>
-            <button onClick={() => { setCurrentView('landing'); setTimeout(() => document.getElementById('faq')?.scrollIntoView({behavior: 'smooth'}), 100); }} className="text-sm font-medium text-slate-300 hover:text-white transition-colors">FAQ</button>
-          </nav>
-
-          {/* Header Action Buttons */}
-          <div className="hidden md:flex items-center gap-4">
-            {user ? (
-              <div className="flex items-center gap-3">
-                <button 
-                  onClick={() => { setCurrentView('dashboard'); setActiveTab('overview'); }} 
-                  className="px-4 py-2 text-sm font-medium text-blue-400 bg-blue-950/40 border border-blue-900 rounded-lg hover:bg-blue-900/30 transition-all flex items-center gap-2"
-                >
-                  <Layers className="w-4 h-4" /> Client Portal
-                </button>
-                <div className="h-6 w-px bg-slate-800"></div>
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700">
-                    <User className="w-4 h-4 text-slate-300" />
-                  </div>
-                  <span className="text-sm font-medium text-slate-300">{user.displayName}</span>
+    <!-- HEADER NAVBAR -->
+    <header class="sticky top-0 z-50 backdrop-blur-md bg-slate-950/80 border-b border-slate-900/80 px-4 lg:px-8 py-4">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-2 cursor-pointer" onclick="switchView('landing')">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
+                    <i data-lucide="trending-up" class="w-6 h-6 text-white"></i>
                 </div>
-                <button onClick={handleLogout} className="p-2 text-slate-400 hover:text-red-400 transition-colors" title="Logout">
-                  <LogOut className="w-5 h-5" />
-                </button>
-              </div>
-            ) : (
-              <>
-                <button onClick={() => setCurrentView('login')} className="text-sm font-medium text-slate-300 hover:text-white transition-colors">Login</button>
-                <button 
-                  onClick={() => setCurrentView('register')} 
-                  className="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-500 transition-all shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20 active:scale-95"
-                >
-                  Daftar Challenge
-                </button>
-              </>
-            )}
-          </div>
-
-          {/* Mobile menu button */}
-          <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden p-2 text-slate-400 hover:text-white">
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
-        </div>
-
-        {/* Mobile Navigation Dropdown */}
-        {mobileMenuOpen && (
-          <div className="md:hidden mt-4 pt-4 border-t border-slate-900 flex flex-col gap-4 animate-in fade-in slide-in-from-top-4 duration-200">
-            <button onClick={() => { setCurrentView('landing'); setMobileMenuOpen(false); }} className="text-left text-sm font-medium text-slate-300 py-1">Home</button>
-            <button onClick={() => { setCurrentView('landing'); setMobileMenuOpen(false); setTimeout(() => document.getElementById('challenges')?.scrollIntoView({behavior: 'smooth'}), 100); }} className="text-left text-sm font-medium text-slate-300 py-1">Program</button>
-            <button onClick={() => { setCurrentView('landing'); setMobileMenuOpen(false); setTimeout(() => document.getElementById('rules')?.scrollIntoView({behavior: 'smooth'}), 100); }} className="text-left text-sm font-medium text-slate-300 py-1">Aturan Main</button>
-            <hr className="border-slate-900" />
-            {user ? (
-              <div className="flex flex-col gap-3">
-                <span className="text-sm text-slate-400">Hi, {user.displayName}</span>
-                <button 
-                  onClick={() => { setCurrentView('dashboard'); setMobileMenuOpen(false); }} 
-                  className="w-full text-center px-4 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg"
-                >
-                  Dashboard
-                </button>
-                <button 
-                  onClick={() => { handleLogout(); setMobileMenuOpen(false); }} 
-                  className="w-full text-center px-4 py-2.5 text-sm font-medium text-red-400 bg-red-950/20 border border-red-900/50 rounded-lg"
-                >
-                  Logout
-                </button>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2">
-                <button onClick={() => { setCurrentView('login'); setMobileMenuOpen(false); }} className="w-full text-center px-4 py-2.5 text-sm font-medium text-slate-300 border border-slate-800 rounded-lg">Login</button>
-                <button onClick={() => { setCurrentView('register'); setMobileMenuOpen(false); }} className="w-full text-center px-4 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg">Daftar Challenge</button>
-              </div>
-            )}
-          </div>
-        )}
-      </header>
-
-      {/* VIEW CONDITIONAL RENDERING */}
-      <main className="pb-24">
-        {currentView === 'landing' && (
-          <div>
-            {/* HERO SECTION */}
-            <section className="relative px-4 pt-16 pb-24 lg:pt-24 lg:pb-32 max-w-7xl mx-auto text-center overflow-hidden">
-              <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl -z-10"></div>
-              <div className="absolute top-1/3 left-1/3 w-72 h-72 bg-indigo-600/10 rounded-full blur-3xl -z-10"></div>
-              
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-950/50 border border-blue-900/60 mb-6 text-sm text-blue-400 font-medium">
-                <Award className="w-4 h-4 text-blue-400" /> Web Prototype Platform Trading Terpercaya No. 1
-              </div>
-
-              <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight max-w-4xl mx-auto leading-tight mb-6">
-                Buktikan Skill Trading-mu, Kami Sediakan Modal Hingga{' '}
-                <span className="bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-500 bg-clip-text text-transparent">
-                  $100,000 USD
-                </span>
-              </h1>
-
-              <p className="text-lg text-slate-400 max-w-2xl mx-auto mb-10">
-                Lalui proses evaluasi 2 fase kami, buktikan konsistensi Anda mengelola risiko, dan ambil bagian bagi hasil (profit share) hingga 80% tanpa risiko modal pribadi.
-              </p>
-
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <button 
-                  onClick={() => document.getElementById('challenges')?.scrollIntoView({behavior: 'smooth'})}
-                  className="w-full sm:w-auto px-8 py-4 font-bold text-white bg-blue-600 hover:bg-blue-500 rounded-xl transition-all shadow-lg shadow-blue-500/20 hover:shadow-blue-500/35 flex items-center justify-center gap-2 group"
-                >
-                  Pilih Paket Challenge <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </button>
-                <button 
-                  onClick={() => document.getElementById('rules')?.scrollIntoView({behavior: 'smooth'})}
-                  className="w-full sm:w-auto px-8 py-4 font-bold text-slate-300 bg-slate-900/60 hover:bg-slate-900 border border-slate-800 rounded-xl transition-all"
-                >
-                  Pelajari Aturan
-                </button>
-              </div>
-
-              {/* STATS STRIP */}
-              <div id="statistics" className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-20 p-6 rounded-2xl bg-slate-900/30 border border-slate-900 backdrop-blur-sm">
                 <div>
-                  <span className="block text-3xl font-bold text-white">$14.2M+</span>
-                  <span className="text-xs text-slate-500 tracking-wider uppercase mt-1">Total Payouts Sent</span>
+                    <span class="text-xl font-bold tracking-tight bg-gradient-to-r from-white via-slate-200 to-blue-400 bg-clip-text text-transparent">
+                        NEXUS
+                    </span>
+                    <span class="text-[10px] block text-blue-500 font-extrabold tracking-widest -mt-1.5">FUNDEDNEXT MODE</span>
                 </div>
-                <div className="border-l border-slate-800/60">
-                  <span className="block text-3xl font-bold text-white">4.8 Hours</span>
-                  <span className="text-xs text-slate-500 tracking-wider uppercase mt-1">Avg. Payout Speed</span>
-                </div>
-                <div className="border-l border-slate-800/60">
-                  <span className="block text-3xl font-bold text-white">120+</span>
-                  <span className="text-xs text-slate-500 tracking-wider uppercase mt-1">Negara Terdaftar</span>
-                </div>
-                <div className="border-l border-slate-800/60">
-                  <span className="block text-3xl font-bold text-white">4.9 / 5</span>
-                  <span className="text-xs text-slate-500 tracking-wider uppercase mt-1">Trustpilot Rating</span>
-                </div>
-              </div>
-            </section>
+            </div>
 
-            {/* INTERACTIVE CHALLENGE FINDER */}
-            <section id="challenges" className="px-4 py-16 max-w-7xl mx-auto border-t border-slate-900">
-              <div className="text-center mb-12">
-                <h2 className="text-3xl font-bold mb-3">Pilih Ukuran Modal Challenge Anda</h2>
-                <p className="text-slate-400">Pilih modal yang sesuai dengan target dan kapabilitas manajemen risiko Anda.</p>
-              </div>
+            <!-- Desktop Navigation -->
+            <nav class="hidden md:flex items-center gap-8">
+                <button onclick="scrollToElement('challenges')" class="text-sm font-semibold text-slate-300 hover:text-white transition-colors">Model Akun</button>
+                <button onclick="scrollToElement('why-us')" class="text-sm font-semibold text-slate-300 hover:text-white transition-colors">Kenapa Kami</button>
+                <button onclick="scrollToElement('payout-ticker')" class="text-sm font-semibold text-slate-300 hover:text-white transition-colors">Live Payouts</button>
+                <button onclick="scrollToElement('faq')" class="text-sm font-semibold text-slate-300 hover:text-white transition-colors">FAQ</button>
+            </nav>
 
-              {/* Slider / Button selector for account size */}
-              <div className="flex flex-wrap items-center justify-center gap-2 max-w-3xl mx-auto mb-10 p-1.5 rounded-xl bg-slate-900 border border-slate-800">
-                {CHALLENGE_PACKAGES.map((pkg) => (
-                  <button
-                    key={pkg.id}
-                    onClick={() => setSelectedPackage(pkg)}
-                    className={`flex-1 min-w-[100px] text-center py-3 px-4 rounded-lg font-bold transition-all text-sm ${
-                      selectedPackage.id === pkg.id 
-                        ? 'bg-blue-600 text-white shadow-md' 
-                        : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
-                    }`}
-                  >
-                    ${(pkg.size / 1000)}k Account
-                  </button>
-                ))}
-              </div>
-
-              {/* Main Feature Display Card */}
-              <div className="grid lg:grid-cols-5 gap-8 items-stretch max-w-5xl mx-auto">
-                <div className="lg:col-span-3 bg-slate-900/40 border border-slate-900 rounded-3xl p-8 flex flex-col justify-between">
-                  <div>
-                    <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
-                      <Shield className="w-6 h-6 text-blue-500" /> Detail Target & Aturan Main
-                    </h3>
-                    
-                    <div className="grid grid-cols-2 gap-6">
-                      <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-900">
-                        <span className="text-xs text-slate-500 block mb-1 uppercase tracking-wider">Target Keuntungan (8%)</span>
-                        <span className="text-2xl font-semibold text-emerald-400">${selectedPackage.target.toLocaleString()}</span>
-                      </div>
-                      <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-900">
-                        <span className="text-xs text-slate-500 block mb-1 uppercase tracking-wider">Profit Share</span>
-                        <span className="text-2xl font-semibold text-white">Up to 80%</span>
-                      </div>
-                      <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-900">
-                        <span className="text-xs text-slate-500 block mb-1 uppercase tracking-wider">Harian Drawdown Limit (5%)</span>
-                        <span className="text-2xl font-semibold text-red-400">${selectedPackage.dailyLimit.toLocaleString()}</span>
-                      </div>
-                      <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-900">
-                        <span className="text-xs text-slate-500 block mb-1 uppercase tracking-wider">Maksimum Drawdown (10%)</span>
-                        <span className="text-2xl font-semibold text-red-500">${selectedPackage.maxLimit.toLocaleString()}</span>
-                      </div>
-                    </div>
-
-                    <div className="mt-8 flex items-center gap-3 p-4 rounded-xl bg-blue-950/20 border border-blue-900/30">
-                      <CheckCircle className="w-5 h-5 text-blue-400 flex-shrink-0" />
-                      <p className="text-xs text-blue-300 leading-relaxed">
-                        Evaluasi dua tahap dirancang demi memastikan Anda memiliki kebiasaan manajemen risiko yang tangguh. Tidak ada batas waktu (No Time Limit) untuk menyelesaikan tantangan ini!
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="lg:col-span-2 bg-gradient-to-b from-slate-900 to-indigo-950/40 border border-slate-800 rounded-3xl p-8 flex flex-col justify-between text-center relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 rounded-full blur-xl"></div>
-                  
-                  <div>
-                    <span className="text-slate-400 font-semibold uppercase tracking-wider text-xs">UKURAN EVALUASI</span>
-                    <h4 className="text-5xl font-black text-white mt-2 mb-4">${selectedPackage.size.toLocaleString()}</h4>
-                    <p className="text-sm text-slate-400 mb-6">Sekali bayar. Biaya registrasi 100% dikembalikan saat payout pertama Anda.</p>
-                    
-                    <div className="h-px bg-slate-800 my-6"></div>
-
-                    <div className="space-y-3 text-left max-w-xs mx-auto mb-8">
-                      <div className="flex items-center gap-2.5 text-sm text-slate-300">
-                        <CheckCircle className="w-4 h-4 text-emerald-500" /> <span>Bebas Hold Posisi Weekend</span>
-                      </div>
-                      <div className="flex items-center gap-2.5 text-sm text-slate-300">
-                        <CheckCircle className="w-4 h-4 text-emerald-500" /> <span>Boleh Pake News Trading</span>
-                      </div>
-                      <div className="flex items-center gap-2.5 text-sm text-slate-300">
-                        <CheckCircle className="w-4 h-4 text-emerald-500" /> <span>Refundable Registration Fee</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="text-3xl font-bold text-white mb-4">
-                      ${selectedPackage.fee} <span className="text-sm text-slate-400 font-normal">USD</span>
-                    </div>
-                    <button 
-                      onClick={() => handlePurchaseChallenge(selectedPackage)}
-                      className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl transition-all shadow-md shadow-blue-500/10 active:scale-98"
-                    >
-                      Beli Challenge Sekarang
+            <!-- Header Action Buttons -->
+            <div class="hidden md:flex items-center gap-4">
+                <!-- Guest View Header Actions -->
+                <div id="guest-header-actions" class="flex items-center gap-4">
+                    <button onclick="switchView('auth-login')" class="text-sm font-semibold text-slate-300 hover:text-white transition-colors">Client Login</button>
+                    <button onclick="switchView('auth-register')" class="px-5 py-2.5 text-sm font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-500 transition-all shadow-lg shadow-blue-500/15 active:scale-95">
+                        Daftar Tantangan
                     </button>
-                  </div>
                 </div>
-              </div>
-            </section>
-
-            {/* ATURAN MAIN / RULES SECTION */}
-            <section id="rules" className="px-4 py-16 bg-slate-950 border-t border-slate-900 max-w-7xl mx-auto">
-              <div className="text-center mb-16">
-                <span className="text-xs text-blue-500 font-bold uppercase tracking-wider">Transparansi</span>
-                <h2 className="text-3xl font-bold mt-2">Aturan Main Sederhana & Masuk Akal</h2>
-                <p className="text-slate-400 mt-2">Tanpa trik jebakan tersembunyi. Fokus saja pada trading harian yang mantap.</p>
-              </div>
-
-              <div className="grid md:grid-cols-3 gap-8">
-                <div className="p-6 rounded-2xl bg-slate-900/30 border border-slate-900">
-                  <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mb-5">
-                    <AlertTriangle className="w-6 h-6 text-amber-500" />
-                  </div>
-                  <h3 className="text-lg font-bold text-white mb-2">5% Daily Drawdown</h3>
-                  <p className="text-sm text-slate-400 leading-relaxed">
-                    Equity atau Balance harian Anda tidak boleh turun melebihi 5% dari saldo awal hari tersebut pada jam server reset (00:00 GMT).
-                  </p>
-                </div>
-
-                <div className="p-6 rounded-2xl bg-slate-900/30 border border-slate-900">
-                  <div className="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-5">
-                    <XCircle className="w-6 h-6 text-red-500" />
-                  </div>
-                  <h3 className="text-lg font-bold text-white mb-2">10% Maximum Loss</h3>
-                  <p className="text-sm text-slate-400 leading-relaxed">
-                    Kerugian keseluruhan dari akun Anda tidak boleh melebihi 10% dari saldo awal Anda. Menjaga akun di atas batas aman ini adalah hal mutlak.
-                  </p>
-                </div>
-
-                <div className="p-6 rounded-2xl bg-slate-900/30 border border-slate-900">
-                  <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-5">
-                    <CheckCircle className="w-6 h-6 text-emerald-500" />
-                  </div>
-                  <h3 className="text-lg font-bold text-white mb-2">Min. 5 Trading Days</h3>
-                  <p className="text-sm text-slate-400 leading-relaxed">
-                    Anda hanya perlu membuka minimal 1 posisi trading selama paling sedikit 5 hari aktif yang berbeda agar target tercapai secara valid.
-                  </p>
-                </div>
-              </div>
-            </section>
-
-            {/* HOW IT WORKS */}
-            <section className="px-4 py-16 bg-slate-900/20 border-t border-slate-900">
-              <div className="max-w-7xl mx-auto">
-                <div className="text-center mb-16">
-                  <h2 className="text-3xl font-bold">Proses Gampang Menuju Akun Funded</h2>
-                </div>
-
-                <div className="grid md:grid-cols-3 gap-8 relative">
-                  {/* Step 1 */}
-                  <div className="text-center">
-                    <div className="w-16 h-16 rounded-full bg-blue-600/10 border-2 border-blue-600 text-blue-500 font-extrabold text-xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-blue-500/5">
-                      1
+                <!-- Logged In Header Actions -->
+                <div id="user-header-actions" class="hidden flex items-center gap-3">
+                    <button onclick="switchView('dashboard')" class="px-4 py-2 text-sm font-bold text-blue-400 bg-blue-950/40 border border-blue-900/50 rounded-xl hover:bg-blue-900/30 transition-all flex items-center gap-2">
+                        <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Client Portal
+                    </button>
+                    <div class="h-6 w-px bg-slate-800"></div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-xl bg-slate-800 flex items-center justify-center border border-slate-700">
+                            <i data-lucide="user" class="w-4 h-4 text-slate-300"></i>
+                        </div>
+                        <span id="header-display-name" class="text-sm font-semibold text-slate-300">Trader</span>
                     </div>
-                    <h3 className="text-xl font-bold text-white mb-2">Fase 1: Evaluasi</h3>
-                    <p className="text-sm text-slate-400 max-w-xs mx-auto leading-relaxed">
-                      Buktikan kemampuan trading Anda dengan mencapai target profit 8% dalam kondisi pengelolaan risiko yang ketat.
-                    </p>
-                  </div>
-
-                  {/* Step 2 */}
-                  <div className="text-center">
-                    <div className="w-16 h-16 rounded-full bg-indigo-600/10 border-2 border-indigo-600 text-indigo-500 font-extrabold text-xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-indigo-500/5">
-                      2
-                    </div>
-                    <h3 className="text-xl font-bold text-white mb-2">Fase 2: Verifikasi</h3>
-                    <p className="text-sm text-slate-400 max-w-xs mx-auto leading-relaxed">
-                      Konfirmasikan konsistensi performa Anda dengan target profit yang lebih rendah, yaitu hanya 5% saja.
-                    </p>
-                  </div>
-
-                  {/* Step 3 */}
-                  <div className="text-center">
-                    <div className="w-16 h-16 rounded-full bg-emerald-600/10 border-2 border-emerald-600 text-emerald-500 font-extrabold text-xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-emerald-500/5">
-                      3
-                    </div>
-                    <h3 className="text-xl font-bold text-white mb-2">Fase 3: Nexus Funded</h3>
-                    <p className="text-sm text-slate-400 max-w-xs mx-auto leading-relaxed">
-                      Selamat, Anda resmi jadi trader kami! Tarik komisi bagi hasil Anda setiap 14 hari kerja tanpa batas limit.
-                    </p>
-                  </div>
+                    <button id="btn-logout" class="p-2 text-slate-400 hover:text-red-400 transition-colors" title="Logout">
+                        <i data-lucide="log-out" class="w-5 h-5"></i>
+                    </button>
                 </div>
-              </div>
-            </section>
-
-            {/* FAQ SECTION */}
-            <section id="faq" className="px-4 py-16 max-w-4xl mx-auto border-t border-slate-900">
-              <h2 className="text-3xl font-bold text-center mb-12">Pertanyaan Populer (FAQ)</h2>
-              <div className="space-y-4">
-                <div className="p-5 rounded-xl bg-slate-900/30 border border-slate-900">
-                  <h3 className="text-base font-bold text-white mb-2">Berapa lama saya harus menyelesaikan tantangan ini?</h3>
-                  <p className="text-sm text-slate-400">Tidak ada batasan waktu! Anda bebas menganalisis pasar tanpa tekanan waktu, asalkan tidak melanggar batasan harian dan maksimum drawdown.</p>
-                </div>
-                <div className="p-5 rounded-xl bg-slate-900/30 border border-slate-900">
-                  <h3 className="text-base font-bold text-white mb-2">Kapan biaya pendaftaran saya akan dikembalikan (refunded)?</h3>
-                  <p className="text-sm text-slate-400">Biaya pendaftaran akan ditambahkan ke payout pertama Anda setelah Anda berhasil lulus dari fase evaluasi dan memperoleh profit di akun live.</p>
-                </div>
-                <div className="p-5 rounded-xl bg-slate-900/30 border border-slate-900">
-                  <h3 className="text-base font-bold text-white mb-2">Instrumen trading apa saja yang bisa saya transaksikan?</h3>
-                  <p className="text-sm text-slate-400">Kami mendukung perdagangan Valas (Forex), Logam Mulia (Gold/Silver), CFD Indeks Saham Utama, serta Aset Kripto populer dengan leverage profesional.</p>
-                </div>
-              </div>
-            </section>
-          </div>
-        )}
-
-        {/* AUTHENTICATION: LOGIN VIEW */}
-        {currentView === 'login' && (
-          <section className="px-4 py-20 max-w-md mx-auto">
-            <div className="bg-slate-900/40 border border-slate-900 rounded-3xl p-8 backdrop-blur-md relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/10 rounded-full blur-2xl"></div>
-              
-              <div className="text-center mb-8">
-                <h2 className="text-2xl font-bold text-white">Selamat Datang Kembali</h2>
-                <p className="text-xs text-slate-400 mt-2">Masuk ke Client Portal untuk memantau performa akun trading Anda.</p>
-              </div>
-
-              {authError && (
-                <div className="mb-6 p-3 rounded-lg bg-red-950/40 border border-red-900 text-xs text-red-400">
-                  {authError}
-                </div>
-              )}
-
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Alamat Email</label>
-                  <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
-                      <Mail className="w-4 h-4" />
-                    </span>
-                    <input 
-                      type="email" 
-                      value={authEmail}
-                      onChange={(e) => setAuthEmail(e.target.value)}
-                      placeholder="contoh: trader@email.com"
-                      className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-3 pl-10 pr-4 text-sm text-white focus:outline-none transition-colors"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Password</label>
-                    <a href="#" className="text-xs text-blue-500 hover:underline">Lupa Password?</a>
-                  </div>
-                  <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
-                      <Lock className="w-4 h-4" />
-                    </span>
-                    <input 
-                      type="password" 
-                      value={authPassword}
-                      onChange={(e) => setAuthPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-3 pl-10 pr-4 text-sm text-white focus:outline-none transition-colors"
-                    />
-                  </div>
-                </div>
-
-                <button 
-                  type="submit"
-                  className="w-full py-3.5 mt-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all"
-                >
-                  Masuk Portal
-                </button>
-              </form>
-
-              <div className="mt-8 pt-6 border-t border-slate-800/60 text-center">
-                <span className="text-xs text-slate-400">Belum punya akun challenge? </span>
-                <button onClick={() => setCurrentView('register')} className="text-xs text-blue-500 font-bold hover:underline">
-                  Daftar di Sini
-                </button>
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* AUTHENTICATION: REGISTER VIEW */}
-        {currentView === 'register' && (
-          <section className="px-4 py-20 max-w-md mx-auto">
-            <div className="bg-slate-900/40 border border-slate-900 rounded-3xl p-8 backdrop-blur-md relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/10 rounded-full blur-2xl"></div>
-              
-              <div className="text-center mb-8">
-                <h2 className="text-2xl font-bold text-white">Daftar Akun Trader</h2>
-                <p className="text-xs text-slate-400 mt-2">Mulai langkah awal Anda meraih akun funded profesional hari ini.</p>
-              </div>
-
-              {authError && (
-                <div className="mb-6 p-3 rounded-lg bg-red-950/40 border border-red-900 text-xs text-red-400">
-                  {authError}
-                </div>
-              )}
-
-              <form onSubmit={handleRegister} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Nama Lengkap</label>
-                  <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
-                      <User className="w-4 h-4" />
-                    </span>
-                    <input 
-                      type="text" 
-                      value={authName}
-                      onChange={(e) => setAuthName(e.target.value)}
-                      placeholder="Masukan nama lengkap Anda"
-                      className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-3 pl-10 pr-4 text-sm text-white focus:outline-none transition-colors"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Alamat Email</label>
-                  <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
-                      <Mail className="w-4 h-4" />
-                    </span>
-                    <input 
-                      type="email" 
-                      value={authEmail}
-                      onChange={(e) => setAuthEmail(e.target.value)}
-                      placeholder="trader@email.com"
-                      className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-3 pl-10 pr-4 text-sm text-white focus:outline-none transition-colors"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Password Baru</label>
-                  <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
-                      <Lock className="w-4 h-4" />
-                    </span>
-                    <input 
-                      type="password" 
-                      value={authPassword}
-                      onChange={(e) => setAuthPassword(e.target.value)}
-                      placeholder="Buat sandi yang aman"
-                      className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-3 pl-10 pr-4 text-sm text-white focus:outline-none transition-colors"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-2.5 py-2">
-                  <input type="checkbox" id="terms" required className="mt-1" />
-                  <label htmlFor="terms" className="text-xs text-slate-400 leading-normal">
-                    Saya menyetujui seluruh aturan evaluasi target, drawdown limit harian, serta pembagian keuntungan platform.
-                  </label>
-                </div>
-
-                <button 
-                  type="submit"
-                  className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all"
-                >
-                  Registrasi Sekarang
-                </button>
-              </form>
-
-              <div className="mt-8 pt-6 border-t border-slate-800/60 text-center">
-                <span className="text-xs text-slate-400">Sudah punya akun? </span>
-                <button onClick={() => setCurrentView('login')} className="text-xs text-blue-500 font-bold hover:underline">
-                  Login di Sini
-                </button>
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* CLIENT PORTAL: TRADER DASHBOARD VIEW */}
-        {currentView === 'dashboard' && (
-          <section className="px-4 lg:px-8 pt-8 max-w-7xl mx-auto">
-            {/* Top Stats Banner */}
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8">
-              <div>
-                <span className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Client Portal Dashboard</span>
-                <h2 className="text-3xl font-extrabold text-white mt-1">Selamat datang kembali, {user?.displayName}!</h2>
-              </div>
-              
-              {/* Account Dropdown Switcher */}
-              <div className="flex items-center gap-3">
-                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Trading Account:</label>
-                <select 
-                  value={selectedAccount.id}
-                  onChange={(e) => {
-                    const acc = accounts.find(a => a.id === e.target.value);
-                    if (acc) setSelectedAccount(acc);
-                  }}
-                  className="bg-slate-900 border border-slate-800 focus:border-blue-500 py-2 px-3 text-sm text-white rounded-lg focus:outline-none font-semibold"
-                >
-                  {accounts.map(acc => (
-                    <option key={acc.id} value={acc.id}>
-                      {acc.id} ({acc.type}) - ${acc.size.toLocaleString()}
-                    </option>
-                  ))}
-                </select>
-              </div>
             </div>
 
-            {/* Dashboard Tabs Navigation */}
-            <div className="flex items-center gap-1 border-b border-slate-900 mb-8 overflow-x-auto pb-px">
-              <button 
-                onClick={() => setActiveTab('overview')}
-                className={`px-5 py-3.5 text-sm font-semibold transition-all flex items-center gap-2 border-b-2 ${
-                  activeTab === 'overview' 
-                    ? 'border-blue-500 text-white bg-blue-500/5' 
-                    : 'border-transparent text-slate-400 hover:text-white'
-                }`}
-              >
-                <Activity className="w-4 h-4" /> Overview Performa
-              </button>
-              <button 
-                onClick={() => setActiveTab('journal')}
-                className={`px-5 py-3.5 text-sm font-semibold transition-all flex items-center gap-2 border-b-2 ${
-                  activeTab === 'journal' 
-                    ? 'border-blue-500 text-white bg-blue-500/5' 
-                    : 'border-transparent text-slate-400 hover:text-white'
-                }`}
-              >
-                <BookOpen className="w-4 h-4" /> Jurnal Posisi
-              </button>
-              <button 
-                onClick={() => setActiveTab('shop')}
-                className={`px-5 py-3.5 text-sm font-semibold transition-all flex items-center gap-2 border-b-2 ${
-                  activeTab === 'shop' 
-                    ? 'border-blue-500 text-white bg-blue-500/5' 
-                    : 'border-transparent text-slate-400 hover:text-white'
-                }`}
-              >
-                <Plus className="w-4 h-4" /> Beli Challenge Baru
-              </button>
-            </div>
-
-            {/* DASHBOARD TAB 1: OVERVIEW */}
-            {activeTab === 'overview' && (
-              <div className="space-y-8 animate-in fade-in duration-300">
-                {/* ACCOUNT STATUS METRIC BLOCKS */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  {/* Saldo / Balance */}
-                  <div className="bg-slate-900/40 border border-slate-900 p-5 rounded-2xl">
-                    <span className="text-xs text-slate-500 uppercase tracking-wider block">Current Balance</span>
-                    <span className="text-3xl font-bold text-white mt-1 block">${selectedAccount.balance.toLocaleString()}</span>
-                    <div className="flex items-center gap-1.5 mt-2 text-xs">
-                      <span className="text-slate-400">Modal Awal:</span>
-                      <span className="font-semibold text-slate-300">${selectedAccount.size.toLocaleString()}</span>
-                    </div>
-                  </div>
-
-                  {/* Ekuitas / Equity */}
-                  <div className="bg-slate-900/40 border border-slate-900 p-5 rounded-2xl">
-                    <span className="text-xs text-slate-500 uppercase tracking-wider block">Current Equity</span>
-                    <span className="text-3xl font-bold text-blue-400 mt-1 block">${selectedAccount.equity.toLocaleString()}</span>
-                    <div className="flex items-center gap-1.5 mt-2 text-xs">
-                      <span className="text-slate-400">Status Akun:</span>
-                      <span className={`px-2 py-0.5 rounded-full font-bold text-[10px] uppercase ${
-                        selectedAccount.status === 'Active' ? 'bg-emerald-950/40 text-emerald-400 border border-emerald-900' :
-                        selectedAccount.status === 'Passed' ? 'bg-blue-950/40 text-blue-400 border border-blue-900' :
-                        'bg-red-950/40 text-red-400 border border-red-900'
-                      }`}>
-                        {selectedAccount.status}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Profit harian / target */}
-                  <div className="bg-slate-900/40 border border-slate-900 p-5 rounded-2xl">
-                    <span className="text-xs text-slate-500 uppercase tracking-wider block">Profit Terkumpul</span>
-                    <span className={`text-3xl font-bold mt-1 block ${selectedAccount.balance >= selectedAccount.size ? 'text-emerald-400' : 'text-red-400'}`}>
-                      ${(selectedAccount.balance - selectedAccount.size).toLocaleString()}
-                    </span>
-                    <div className="flex items-center gap-1.5 mt-2 text-xs">
-                      <span className="text-slate-400">Target Profit:</span>
-                      <span className="font-semibold text-slate-300">${selectedAccount.profitTarget.toLocaleString()}</span>
-                    </div>
-                  </div>
-
-                  {/* Sisa Hari Trading */}
-                  <div className="bg-slate-900/40 border border-slate-900 p-5 rounded-2xl">
-                    <span className="text-xs text-slate-500 uppercase tracking-wider block">Hari Aktif Trading</span>
-                    <span className="text-3xl font-bold text-white mt-1 block">{selectedAccount.daysTraded} hari</span>
-                    <div className="flex items-center gap-1.5 mt-2 text-xs">
-                      <span className="text-slate-400">Syarat Minimum:</span>
-                      <span className="font-semibold text-slate-300">{selectedAccount.minDaysRequired} hari</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* VISUAL CHART AREA & TARGET METRICS BAR */}
-                <div className="grid lg:grid-cols-3 gap-6">
-                  {/* Recharts Area Chart */}
-                  <div className="lg:col-span-2 bg-slate-900/20 border border-slate-900 p-6 rounded-3xl">
-                    <div className="flex justify-between items-center mb-6">
-                      <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                        <LineChart className="w-5 h-5 text-blue-500" /> Kurva Ekuitas & Balance
-                      </h3>
-                      <span className="text-xs text-slate-500">Updated Real-Time</span>
-                    </div>
-
-                    <div className="h-72 w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart
-                          data={selectedAccount.metrics}
-                          margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
-                        >
-                          <defs>
-                            <linearGradient id="colorBalance" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor="#2563eb" stopOpacity={0.3}/>
-                              <stop offset="95%" stopColor="#2563eb" stopOpacity={0}/>
-                            </linearGradient>
-                          </defs>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                          <XAxis dataKey="name" stroke="#64748b" fontSize={11} />
-                          <YAxis stroke="#64748b" fontSize={11} domain={['auto', 'auto']} />
-                          <Tooltip 
-                            contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', color: '#f1f5f9' }}
-                            formatter={(value) => [`$${value.toLocaleString()}`]}
-                          />
-                          <Area type="monotone" dataKey="balance" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#colorBalance)" />
-                        </AreaChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-
-                  {/* Objectives Progress Tracking Panels */}
-                  <div className="bg-slate-900/40 border border-slate-900 p-6 rounded-3xl flex flex-col justify-between">
-                    <div>
-                      <h3 className="text-lg font-bold text-white mb-6">Analisis Objectives</h3>
-                      
-                      <div className="space-y-5">
-                        {/* Daily Loss Progress */}
-                        <div>
-                          <div className="flex justify-between text-xs mb-1.5">
-                            <span className="text-slate-400">Kerugian Harian (Max ${selectedAccount.dailyLimit})</span>
-                            <span className="font-semibold text-slate-200">${selectedAccount.dailyLoss}</span>
-                          </div>
-                          <div className="w-full bg-slate-950 h-2 rounded-full overflow-hidden border border-slate-900">
-                            <div 
-                              className={`h-full rounded-full ${selectedAccount.dailyLoss >= selectedAccount.dailyLimit ? 'bg-red-500' : 'bg-amber-500'}`}
-                              style={{ width: `${Math.min((selectedAccount.dailyLoss / selectedAccount.dailyLimit) * 100, 100)}%` }}
-                            ></div>
-                          </div>
-                        </div>
-
-                        {/* Overall Maximum Loss Progress */}
-                        <div>
-                          <div className="flex justify-between text-xs mb-1.5">
-                            <span className="text-slate-400">Kerugian Keseluruhan (Max ${selectedAccount.maxLimit})</span>
-                            <span className="font-semibold text-slate-200">${selectedAccount.maxLoss}</span>
-                          </div>
-                          <div className="w-full bg-slate-950 h-2 rounded-full overflow-hidden border border-slate-900">
-                            <div 
-                              className={`h-full rounded-full ${selectedAccount.maxLoss >= selectedAccount.maxLimit ? 'bg-red-600' : 'bg-red-400'}`}
-                              style={{ width: `${Math.min((selectedAccount.maxLoss / selectedAccount.maxLimit) * 100, 100)}%` }}
-                            ></div>
-                          </div>
-                        </div>
-
-                        {/* Profit Target Progress */}
-                        <div>
-                          <div className="flex justify-between text-xs mb-1.5">
-                            <span className="text-slate-400">Target Profit (Goal: ${selectedAccount.profitTarget})</span>
-                            <span className="font-semibold text-emerald-400">
-                              ${Math.max(0, selectedAccount.balance - selectedAccount.size).toLocaleString()}
-                            </span>
-                          </div>
-                          <div className="w-full bg-slate-950 h-2 rounded-full overflow-hidden border border-slate-900">
-                            <div 
-                              className="h-full bg-emerald-500 rounded-full"
-                              style={{ width: `${Math.min((Math.max(0, selectedAccount.balance - selectedAccount.size) / selectedAccount.profitTarget) * 100, 100)}%` }}
-                            ></div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="pt-6 border-t border-slate-800/60 mt-6">
-                      <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg ${selectedAccount.status === 'Active' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
-                          {selectedAccount.status === 'Active' ? <CheckCircle className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
-                        </div>
-                        <div>
-                          <span className="block text-sm font-bold text-white">Evaluasi Sistem</span>
-                          <span className="text-xs text-slate-500">
-                            {selectedAccount.status === 'Active' ? 'Seluruh parameter aman dari pelanggaran.' : 'Akun ini terdeteksi melanggar batasan drawdown.'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* RECENT TRADING JOURNAL & QUICK SIMULATOR */}
-                <div className="grid lg:grid-cols-3 gap-6">
-                  {/* Journal Table Summary */}
-                  <div className="lg:col-span-2 bg-slate-900/40 border border-slate-900 rounded-3xl p-6">
-                    <div className="flex justify-between items-center mb-6">
-                      <h3 className="text-lg font-bold text-white">Posisi Terakhir Terbuka</h3>
-                      <button onClick={() => setActiveTab('journal')} className="text-xs text-blue-500 font-semibold hover:underline flex items-center gap-1">
-                        Lihat Jurnal <ChevronRight className="w-4 h-4" />
-                      </button>
-                    </div>
-
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left text-sm text-slate-400">
-                        <thead>
-                          <tr className="border-b border-slate-800 text-xs text-slate-500 uppercase tracking-wider">
-                            <th className="pb-3 font-semibold">Asset Pair</th>
-                            <th className="pb-3 font-semibold">Tipe</th>
-                            <th className="pb-3 font-semibold">Lots</th>
-                            <th className="pb-3 font-semibold text-right">Profit / Loss</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {selectedAccount.trades.slice(0, 4).map((trade) => (
-                            <tr key={trade.id} className="border-b border-slate-800/60 hover:bg-slate-900/20">
-                              <td className="py-3 font-semibold text-white">{trade.pair}</td>
-                              <td className="py-3">
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${trade.type === 'BUY' ? 'bg-emerald-950/50 text-emerald-400 border border-emerald-900' : 'bg-red-950/50 text-red-400 border border-red-900'}`}>
-                                  {trade.type}
-                                </span>
-                              </td>
-                              <td className="py-3">{trade.lots}</td>
-                              <td className={`py-3 text-right font-bold ${trade.profit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                                ${trade.profit.toLocaleString()}
-                              </td>
-                            </tr>
-                          ))}
-                          {selectedAccount.trades.length === 0 && (
-                            <tr>
-                              <td colSpan="4" className="text-center py-6 text-slate-500">Belum ada aktivitas perdagangan terekam pada akun ini.</td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-
-                  {/* Sandbox Trading Simulator Form */}
-                  <div className="bg-slate-900/40 border border-slate-900 p-6 rounded-3xl">
-                    <h3 className="text-lg font-bold text-white mb-2">Simulasikan Trading</h3>
-                    <p className="text-xs text-slate-400 mb-6">Lek, lo bisa simulasikan trade di bawah buat ngeliat performa balance, equity, dan chart berubah.</p>
-
-                    <form onSubmit={handleAddSimulatedTrade} className="space-y-4">
-                      <div>
-                        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Asset Pair</label>
-                        <select 
-                          value={simPair}
-                          onChange={(e) => setSimPair(e.target.value)}
-                          className="w-full bg-slate-950 border border-slate-800 py-2.5 px-3 text-sm text-white rounded-lg focus:outline-none"
-                        >
-                          <option value="XAUUSD">GOLD (XAUUSD)</option>
-                          <option value="EURUSD">EURUSD</option>
-                          <option value="GBPUSD">GBPUSD</option>
-                          <option value="BTCUSD">BTCUSD</option>
-                        </select>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Tipe Posisi</label>
-                          <div className="grid grid-cols-2 gap-1.5 bg-slate-950 p-1 border border-slate-800 rounded-lg">
-                            <button 
-                              type="button"
-                              onClick={() => setSimType('BUY')}
-                              className={`py-1 rounded font-bold text-xs text-center transition-all ${simType === 'BUY' ? 'bg-emerald-600 text-white' : 'text-slate-400'}`}
-                            >
-                              BUY
-                            </button>
-                            <button 
-                              type="button"
-                              onClick={() => setSimType('SELL')}
-                              className={`py-1 rounded font-bold text-xs text-center transition-all ${simType === 'SELL' ? 'bg-red-600 text-white' : 'text-slate-400'}`}
-                            >
-                              SELL
-                            </button>
-                          </div>
-                        </div>
-                        <div>
-                          <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Lots size</label>
-                          <input 
-                            type="text" 
-                            value={simLots}
-                            onChange={(e) => setSimLots(e.target.value)}
-                            placeholder="1.0"
-                            className="w-full bg-slate-950 border border-slate-800 py-2 px-3 text-sm text-white rounded-lg focus:outline-none text-center"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Simulasi Payout/Loss (USD)</label>
-                        <input 
-                          type="text" 
-                          value={simProfit}
-                          onChange={(e) => setSimProfit(e.target.value)}
-                          placeholder="Nilai profit (+/-)"
-                          className="w-full bg-slate-950 border border-slate-800 py-2.5 px-3 text-sm text-white rounded-lg focus:outline-none font-semibold text-center"
-                        />
-                      </div>
-
-                      <button 
-                        type="submit" 
-                        disabled={selectedAccount.status !== 'Active'}
-                        className={`w-full py-3 rounded-xl font-bold text-sm transition-all ${
-                          selectedAccount.status === 'Active' 
-                            ? 'bg-blue-600 hover:bg-blue-500 text-white' 
-                            : 'bg-slate-800 text-slate-500 cursor-not-allowed'
-                        }`}
-                      >
-                        {selectedAccount.status === 'Active' ? 'Kirim Hasil Trading' : 'Akun Tidak Aktif'}
-                      </button>
-                    </form>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* DASHBOARD TAB 2: JOURNAL */}
-            {activeTab === 'journal' && (
-              <div className="bg-slate-900/40 border border-slate-900 p-6 rounded-3xl animate-in fade-in duration-300">
-                <div className="flex justify-between items-center mb-6">
-                  <div>
-                    <h3 className="text-xl font-bold text-white">Jurnal Perdagangan Terperinci</h3>
-                    <p className="text-xs text-slate-400 mt-1">Gunakan riwayat perdagangan ini untuk melakukan evaluasi performa manajemen risiko Anda secara berkelanjutan.</p>
-                  </div>
-                </div>
-
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-sm text-slate-400">
-                    <thead>
-                      <tr className="border-b border-slate-800 text-xs text-slate-500 uppercase tracking-wider">
-                        <th className="pb-4 font-semibold">Trade ID</th>
-                        <th className="pb-4 font-semibold">Waktu Eksekusi</th>
-                        <th className="pb-4 font-semibold">Pasangan Aset</th>
-                        <th className="pb-4 font-semibold">Tipe Posisi</th>
-                        <th className="pb-4 font-semibold">Lot Size</th>
-                        <th className="pb-4 font-semibold text-right">Profit / Loss (USD)</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {selectedAccount.trades.map((trade) => (
-                        <tr key={trade.id} className="border-b border-slate-800/40 hover:bg-slate-900/20">
-                          <td className="py-4 font-mono text-xs text-slate-400">{trade.id}</td>
-                          <td className="py-4 text-xs">{trade.time}</td>
-                          <td className="py-4 font-semibold text-white">{trade.pair}</td>
-                          <td className="py-4">
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${trade.type === 'BUY' ? 'bg-emerald-950/50 text-emerald-400 border border-emerald-900' : 'bg-red-950/50 text-red-400 border border-red-900'}`}>
-                              {trade.type}
-                            </span>
-                          </td>
-                          <td className="py-4">{trade.lots}</td>
-                          <td className={`py-4 text-right font-extrabold ${trade.profit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                            ${trade.profit.toLocaleString()}
-                          </td>
-                        </tr>
-                      ))}
-                      {selectedAccount.trades.length === 0 && (
-                        <tr>
-                          <td colSpan="6" className="text-center py-12 text-slate-500">
-                            Belum ada aktivitas trading yang terekam pada program evaluasi akun ini.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
-            {/* DASHBOARD TAB 3: SHOP */}
-            {activeTab === 'shop' && (
-              <div className="space-y-8 animate-in fade-in duration-300">
-                <div className="text-center max-w-2xl mx-auto py-4">
-                  <h3 className="text-2xl font-bold text-white mb-2">Tambah Ukuran Modal Anda</h3>
-                  <p className="text-sm text-slate-400">Butuh daya beli lebih besar? Ambil tantangan program evaluasi tambahan hari ini.</p>
-                </div>
-
-                <div className="grid md:grid-cols-3 gap-6">
-                  {CHALLENGE_PACKAGES.map((pkg) => (
-                    <div key={pkg.id} className="bg-slate-900/40 border border-slate-900 hover:border-slate-800 rounded-2xl p-6 flex flex-col justify-between transition-all">
-                      <div>
-                        <span className="text-xs text-blue-500 font-bold uppercase tracking-widest">{pkg.type} Challenge</span>
-                        <h4 className="text-3xl font-extrabold text-white mt-2">${pkg.size.toLocaleString()}</h4>
-                        
-                        <div className="space-y-2 mt-6">
-                          <div className="flex justify-between text-xs text-slate-400">
-                            <span>Target Profit:</span>
-                            <span className="text-white font-semibold">${pkg.target.toLocaleString()}</span>
-                          </div>
-                          <div className="flex justify-between text-xs text-slate-400">
-                            <span>Max Daily Drawdown:</span>
-                            <span className="text-white font-semibold">${pkg.dailyLimit.toLocaleString()}</span>
-                          </div>
-                          <div className="flex justify-between text-xs text-slate-400">
-                            <span>Max Drawdown Limit:</span>
-                            <span className="text-white font-semibold">${pkg.maxLimit.toLocaleString()}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="mt-8 pt-6 border-t border-slate-800/60">
-                        <div className="flex justify-between items-center mb-4">
-                          <span className="text-xs text-slate-500">Registration Fee</span>
-                          <span className="text-xl font-bold text-white">${pkg.fee} USD</span>
-                        </div>
-                        <button 
-                          onClick={() => handlePurchaseChallenge(pkg)}
-                          className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-sm transition-all"
-                        >
-                          Daftar Akun Baru
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </section>
-        )}
-      </main>
-
-      {/* SYSTEM FOOTER */}
-      <footer className="border-t border-slate-900 bg-slate-950 px-4 py-12 text-center text-xs text-slate-500">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center">
-              <TrendingUp className="w-3.5 h-3.5 text-white" />
-            </div>
-            <span className="font-bold text-slate-300">NEXUS FUNDING</span>
-          </div>
-          
-          <div className="flex gap-6">
-            <a href="#" className="hover:text-white transition-colors">Syarat & Ketentuan</a>
-            <a href="#" className="hover:text-white transition-colors">Kebijakan Privasi</a>
-            <a href="#" className="hover:text-white transition-colors">Hubungi Dukungan</a>
-          </div>
-
-          <p>© 2026 Nexus Funding Prototype. Hak Cipta Dilindungi Undang-Undang.</p>
+            <!-- Mobile menu button -->
+            <button onclick="toggleMobileMenu()" class="md:hidden p-2 text-slate-400 hover:text-white">
+                <i data-lucide="menu" id="menu-icon-open" class="w-6 h-6"></i>
+                <i data-lucide="x" id="menu-icon-close" class="w-6 h-6 hidden"></i>
+            </button>
         </div>
-      </footer>
+
+        <!-- Mobile Navigation Dropdown -->
+        <div id="mobile-menu" class="hidden md:hidden mt-4 pt-4 border-t border-slate-900 flex flex-col gap-4">
+            <button onclick="scrollToElementMobile('challenges')" class="text-left text-sm font-semibold text-slate-300 py-1">Model Akun</button>
+            <button onclick="scrollToElementMobile('why-us')" class="text-left text-sm font-semibold text-slate-300 py-1">Kenapa Kami</button>
+            <button onclick="scrollToElementMobile('payout-ticker')" class="text-left text-sm font-semibold text-slate-300 py-1">Live Payouts</button>
+            <button onclick="scrollToElementMobile('faq')" class="text-left text-sm font-semibold text-slate-300 py-1">FAQ</button>
+            <hr class="border-slate-900" />
+            
+            <div id="mobile-guest-actions" class="flex flex-col gap-2">
+                <button onclick="switchView('auth-login'); toggleMobileMenu()" class="w-full text-center px-4 py-2.5 text-sm font-semibold text-slate-300 border border-slate-800 rounded-xl">Login</button>
+                <button onclick="switchView('auth-register'); toggleMobileMenu()" class="w-full text-center px-4 py-2.5 text-sm font-semibold text-white bg-blue-600 rounded-xl">Daftar Tantangan</button>
+            </div>
+            <div id="mobile-user-actions" class="hidden flex flex-col gap-3">
+                <span id="mobile-display-name" class="text-sm text-slate-400 font-semibold">Hi, Trader</span>
+                <button onclick="switchView('dashboard'); toggleMobileMenu()" class="w-full text-center px-4 py-2.5 text-sm font-bold text-white bg-blue-600 rounded-xl">Client Portal</button>
+                <button id="btn-logout-mobile" class="w-full text-center px-4 py-2.5 text-sm font-bold text-red-400 bg-red-950/20 border border-red-900/50 rounded-xl">Logout</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN VIEW CONDITIONAL RENDERING -->
+    <main class="pb-24 flex-grow">
+        
+        <!-- VIEW 1: LANDING PAGE -->
+        <section id="view-landing" class="view-section">
+            <!-- HERO SECTION -->
+            <div class="relative px-4 pt-16 pb-24 lg:pt-24 lg:pb-32 max-w-7xl mx-auto text-center overflow-hidden">
+                <div class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl -z-10"></div>
+                <div class="absolute top-1/3 left-1/3 w-72 h-72 bg-indigo-600/10 rounded-full blur-3xl -z-10"></div>
+                
+                <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-950/50 border border-blue-900/60 mb-6 text-sm text-blue-400 font-bold">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Satu-satunya Prop Firm dengan Pembagian Keuntungan 15% dari Fase Demo!
+                </div>
+
+                <h1 class="text-4xl sm:text-7xl font-extrabold tracking-tight max-w-5xl mx-auto leading-tight mb-6">
+                    Buktikan Skill Trading-mu, Kami Berikan Payout Tercepat & Modal Hingga
+                    <span class="bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-500 bg-clip-text text-transparent block mt-2">
+                        $200,000 USD
+                    </span>
+                </h1>
+
+                <p class="text-base sm:text-lg text-slate-400 max-w-3xl mx-auto mb-10 leading-relaxed">
+                    Uji potensi trading Anda dengan model evaluasi **Stellar Challenge** yang fleksibel. Dapatkan profit-share hingga 90%, pengembalian biaya pendaftaran (*refundable fee 150%*), dan **No Time Limit**!
+                </p>
+
+                <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                    <button onclick="scrollToElement('challenges')" class="w-full sm:w-auto px-8 py-4 font-bold text-white bg-blue-600 hover:bg-blue-500 rounded-xl transition-all shadow-lg shadow-blue-500/20 hover:shadow-blue-500/35 flex items-center justify-center gap-2 group">
+                        Pilih Model Akun <i data-lucide="arrow-right" class="w-5 h-5 group-hover:translate-x-1 transition-transform"></i>
+                    </button>
+                    <button onclick="scrollToElement('why-us')" class="w-full sm:w-auto px-8 py-4 font-bold text-slate-300 bg-slate-900/60 hover:bg-slate-900 border border-slate-800/80 rounded-xl transition-all">
+                        Pelajari Aturan
+                    </button>
+                </div>
+
+                <!-- LIVE PAYOUT TICKER (FundedNext style) -->
+                <div id="payout-ticker" class="mt-16 border-y border-slate-900 bg-slate-950/40 py-4 overflow-hidden relative">
+                    <div class="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-slate-950 to-transparent z-10 pointer-events-none"></div>
+                    <div class="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-slate-950 to-transparent z-10 pointer-events-none"></div>
+                    <div class="flex items-center gap-8 whitespace-nowrap animate-marquee">
+                        <!-- Repeated for smooth looping -->
+                        <div class="flex items-center gap-8">
+                            <span class="text-xs text-slate-500 uppercase tracking-widest font-extrabold flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-blue-500"></span> Live Payouts:</span>
+                            <span class="text-xs font-semibold text-slate-300"><strong class="text-white">Fajar S.</strong> (Indonesia) - <strong class="text-emerald-400">$2,450.00</strong> via USDT</span>
+                            <span class="text-xs font-semibold text-slate-300"><strong class="text-white">Alexandre M.</strong> (Prancis) - <strong class="text-emerald-400">$6,812.50</strong> via Deel</span>
+                            <span class="text-xs font-semibold text-slate-300"><strong class="text-white">Yuki T.</strong> (Jepang) - <strong class="text-emerald-400">$1,290.00</strong> via USDT</span>
+                            <span class="text-xs font-semibold text-slate-300"><strong class="text-white">Johnathan K.</strong> (AS) - <strong class="text-emerald-400">$12,400.00</strong> via Bank</span>
+                            <span class="text-xs font-semibold text-slate-300"><strong class="text-white">Ananya R.</strong> (India) - <strong class="text-emerald-400">$4,320.00</strong> via USDT</span>
+                        </div>
+                        <div class="flex items-center gap-8">
+                            <span class="text-xs text-slate-500 uppercase tracking-widest font-extrabold flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-blue-500"></span> Live Payouts:</span>
+                            <span class="text-xs font-semibold text-slate-300"><strong class="text-white">Fajar S.</strong> (Indonesia) - <strong class="text-emerald-400">$2,450.00</strong> via USDT</span>
+                            <span class="text-xs font-semibold text-slate-300"><strong class="text-white">Alexandre M.</strong> (Prancis) - <strong class="text-emerald-400">$6,812.50</strong> via Deel</span>
+                            <span class="text-xs font-semibold text-slate-300"><strong class="text-white">Yuki T.</strong> (Jepang) - <strong class="text-emerald-400">$1,290.00</strong> via USDT</span>
+                            <span class="text-xs font-semibold text-slate-300"><strong class="text-white">Johnathan K.</strong> (AS) - <strong class="text-emerald-400">$12,400.00</strong> via Bank</span>
+                            <span class="text-xs font-semibold text-slate-300"><strong class="text-white">Ananya R.</strong> (India) - <strong class="text-emerald-400">$4,320.00</strong> via USDT</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DYNAMIC PLAN CONFIGURATOR -->
+            <div id="challenges" class="px-4 py-16 max-w-7xl mx-auto border-t border-slate-900">
+                <div class="text-center mb-12">
+                    <span class="text-xs text-blue-500 font-extrabold uppercase tracking-widest">Model Evaluasi</span>
+                    <h2 class="text-3xl font-extrabold mt-2 mb-3 text-white">Stellar Challenge Suite</h2>
+                    <p class="text-slate-400 max-w-2xl mx-auto">Kami menyediakan 4 variasi model tantangan untuk mencocokkan setiap gaya manajemen trading Anda.</p>
+                </div>
+
+                <!-- Model Tabs Selection -->
+                <div class="flex flex-wrap items-center justify-center gap-2 max-w-4xl mx-auto mb-8 p-1.5 rounded-2xl bg-slate-900/60 border border-slate-800">
+                    <button onclick="switchChallengeModel('stellar-2step')" id="btn-model-stellar-2step" class="flex-1 min-w-[150px] text-center py-3 px-4 rounded-xl font-bold transition-all text-xs bg-blue-600 text-white shadow-md shadow-blue-500/10">
+                        Stellar 2-Step
+                    </button>
+                    <button onclick="switchChallengeModel('stellar-1step')" id="btn-model-stellar-1step" class="flex-1 min-w-[150px] text-center py-3 px-4 rounded-xl font-bold transition-all text-xs text-slate-400 hover:text-white">
+                        Stellar 1-Step
+                    </button>
+                    <button onclick="switchChallengeModel('evaluation')" id="btn-model-evaluation" class="flex-1 min-w-[150px] text-center py-3 px-4 rounded-xl font-bold transition-all text-xs text-slate-400 hover:text-white">
+                        Evaluation Model
+                    </button>
+                    <button onclick="switchChallengeModel('express')" id="btn-model-express" class="flex-1 min-w-[150px] text-center py-3 px-4 rounded-xl font-bold transition-all text-xs text-slate-400 hover:text-white">
+                        Express Model
+                    </button>
+                </div>
+
+                <!-- Account Size Buttons Selector -->
+                <div id="account-size-container" class="flex flex-wrap items-center justify-center gap-2 max-w-2xl mx-auto mb-10 p-1.5 rounded-xl bg-slate-950 border border-slate-900">
+                    <!-- Populated Dynamically -->
+                </div>
+
+                <!-- Specification Comparison Card Area -->
+                <div class="grid lg:grid-cols-5 gap-8 items-stretch max-w-5xl mx-auto">
+                    <div class="lg:col-span-3 bg-slate-900/40 border border-slate-900 rounded-3xl p-8 flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                                <i data-lucide="shield-check" class="w-6 h-6 text-blue-500"></i> Spesifikasi & Parameter Aturan
+                            </h3>
+                            
+                            <div class="space-y-4">
+                                <div class="flex justify-between items-center py-3 border-b border-slate-800/80">
+                                    <span class="text-sm text-slate-400">Target Profit (Fase 1 / Fase 2)</span>
+                                    <span id="spec-target-profit" class="text-sm font-bold text-emerald-400">8% / 5%</span>
+                                </div>
+                                <div class="flex justify-between items-center py-3 border-b border-slate-800/80">
+                                    <span class="text-sm text-slate-400 flex items-center gap-1.5">
+                                        Maksimum Drawdown Harian
+                                        <span class="px-2 py-0.5 text-[9px] font-extrabold bg-blue-950 text-blue-400 border border-blue-900 rounded-full uppercase">Balance-Based</span>
+                                    </span>
+                                    <span id="spec-daily-limit" class="text-sm font-bold text-red-400">5% ($2,500)</span>
+                                </div>
+                                <div class="flex justify-between items-center py-3 border-b border-slate-800/80">
+                                    <span class="text-sm text-slate-400">Maksimum Drawdown Keseluruhan</span>
+                                    <span id="spec-max-limit" class="text-sm font-bold text-red-500">10% ($5,000)</span>
+                                </div>
+                                <div class="flex justify-between items-center py-3 border-b border-slate-800/80">
+                                    <span class="text-sm text-slate-400">Batas Waktu (Time Limit)</span>
+                                    <span id="spec-time-limit" class="text-sm font-bold text-white">Tidak Ada Batas Waktu</span>
+                                </div>
+                                <div class="flex justify-between items-center py-3 border-b border-slate-800/80">
+                                    <span class="text-sm text-slate-400">Rasio Pengungkit (Leverage)</span>
+                                    <span id="spec-leverage" class="text-sm font-bold text-slate-300">1:100 (Forex)</span>
+                                </div>
+                                <div class="flex justify-between items-center py-3">
+                                    <span class="text-sm text-slate-400">Bagi Hasil Pertama (First Profit Share)</span>
+                                    <span class="text-sm font-bold text-emerald-400">80% (Bisa Up to 90%)</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 flex items-center gap-3 p-4 rounded-xl bg-blue-950/20 border border-blue-900/30">
+                            <i data-lucide="sparkles" class="w-5 h-5 text-blue-400 flex-shrink-0"></i>
+                            <p class="text-xs text-blue-300 leading-relaxed">
+                                <strong class="text-white">Fitur Eksklusif:</strong> Anda berhak mendapatkan bonus profit share 15% dari akumulasi hasil profit fase demo ketika Anda berhasil melakukan penarikan dana pertama di akun live!
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Side Billing and CTA -->
+                    <div class="lg:col-span-2 bg-gradient-to-b from-slate-900 to-indigo-950/30 border border-slate-800 rounded-3xl p-8 flex flex-col justify-between text-center relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 rounded-full blur-xl"></div>
+                        
+                        <div>
+                            <span id="card-label-type" class="text-blue-500 font-extrabold uppercase tracking-widest text-xs">STELLAR 2-STEP EVALUATION</span>
+                            <h4 id="card-account-size" class="text-5xl font-black text-white mt-3 mb-2">$50,000</h4>
+                            <p class="text-xs text-slate-400">Dapatkan akses akun prop-firm berlisensi secara aman.</p>
+                            
+                            <div class="h-px bg-slate-800/80 my-6"></div>
+
+                            <div class="space-y-3.5 text-left max-w-xs mx-auto mb-8">
+                                <div class="flex items-center gap-2.5 text-xs text-slate-300">
+                                    <i data-lucide="check-circle" class="w-4 h-4 text-emerald-500"></i> <span>Bebas Berita Politik & Berita Makro</span>
+                                </div>
+                                <div class="flex items-center gap-2.5 text-xs text-slate-300">
+                                    <i data-lucide="check-circle" class="w-4 h-4 text-emerald-500"></i> <span>Dipebolehkan Hold Over-Weekend</span>
+                                </div>
+                                <div class="flex items-center gap-2.5 text-xs text-slate-300">
+                                    <i data-lucide="check-circle" class="w-4 h-4 text-emerald-500"></i> <span>150% Refundable Fee Saat Lulus</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="text-3xl font-black text-white mb-4">
+                                <span id="card-package-fee">$299</span> <span class="text-sm text-slate-400 font-normal">USD</span>
+                            </div>
+                            <button onclick="handlePurchaseFromLanding()" class="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl transition-all shadow-md shadow-blue-500/10 active:scale-98">
+                                Daftar Tantangan Sekarang
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- WHY CHOOSE US (FundedNext features) -->
+            <div id="why-us" class="px-4 py-20 bg-slate-950/40 border-t border-slate-900">
+                <div class="max-w-7xl mx-auto">
+                    <div class="text-center mb-16">
+                        <span class="text-xs text-blue-500 font-extrabold uppercase tracking-widest">Keunggulan Utama</span>
+                        <h2 class="text-3xl font-extrabold mt-2 text-white">Standar Baru Industri Prop Firm</h2>
+                        <p class="text-slate-400 mt-2">Didesain oleh trader profesional, untuk menghasilkan profit konsisten secara optimal.</p>
+                    </div>
+
+                    <div class="grid md:grid-cols-3 gap-8">
+                        <div class="p-6 rounded-2xl bg-slate-900/30 border border-slate-900 hover:border-slate-800 transition-all">
+                            <div class="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mb-5 text-blue-400">
+                                <i data-lucide="percent" class="w-6 h-6"></i>
+                            </div>
+                            <h3 class="text-lg font-bold text-white mb-2">15% Profit Share Demo</h3>
+                            <p class="text-sm text-slate-400 leading-relaxed">
+                                Satu-satunya program prop-firm yang menghargai waktu belajar Anda. Kami membayar 15% dari keuntungan fase demo Anda saat lulus.
+                            </p>
+                        </div>
+
+                        <div class="p-6 rounded-2xl bg-slate-900/30 border border-slate-900 hover:border-slate-800 transition-all">
+                            <div class="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mb-5 text-indigo-400">
+                                <i data-lucide="calculator" class="w-6 h-6"></i>
+                            </div>
+                            <h3 class="text-lg font-bold text-white mb-2">Daily Drawdown Berbasis Saldo</h3>
+                            <p class="text-sm text-slate-400 leading-relaxed">
+                                Aturan drawdown harian kami dihitung murni berdasarkan saldo awal hari (Balance-Based), bukan berdasarkan ekuitas mengambang (Equity). Lebih aman untuk penahanan transaksi!
+                            </p>
+                        </div>
+
+                        <div class="p-6 rounded-2xl bg-slate-900/30 border border-slate-900 hover:border-slate-800 transition-all">
+                            <div class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-5 text-emerald-400">
+                                <i data-lucide="badge-dollar-sign" class="w-6 h-6"></i>
+                            </div>
+                            <h3 class="text-lg font-bold text-white mb-2">Pembagian Keuntungan Hingga 90%</h3>
+                            <p class="text-sm text-slate-400 leading-relaxed">
+                                Ambil bagian keuntungan terbesar di pasar industri prop-firm global. Mulailah dengan 80% dan tingkatkan ke 90% dengan fitur scale-up kami.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FAQ SECTION -->
+            <div id="faq" class="px-4 py-16 max-w-4xl mx-auto border-t border-slate-900">
+                <h2 class="text-3xl font-bold text-center mb-12 text-white">Pertanyaan Populer (FAQ)</h2>
+                <div class="space-y-4">
+                    <div class="p-5 rounded-2xl bg-slate-900/20 border border-slate-900">
+                        <h3 class="text-base font-bold text-white mb-2">Bagaimana cara kerja 15% Profit Share dari Fase Demo?</h3>
+                        <p class="text-sm text-slate-400 leading-relaxed">
+                            Ketika Anda berhasil lulus dari seluruh proses evaluasi (Phase 1 dan Phase 2) dan mulai menghasilkan profit di akun live, keuntungan sebesar 15% dari akumulasi hasil profit selama fase evaluasi demo akan kami kirimkan bersamaan dengan Payout pertama Anda!
+                        </p>
+                    </div>
+                    <div class="p-5 rounded-2xl bg-slate-900/20 border border-slate-900">
+                        <h3 class="text-base font-bold text-white mb-2">Apa yang dimaksud dengan Balance-Based Drawdown?</h3>
+                        <p class="text-sm text-slate-400 leading-relaxed">
+                            Drawdown harian dihitung berdasarkan Saldo (Balance) awal hari Anda pada pukul 00:00 GMT. Keuntungan atau kerugian mengambang dari posisi terbuka Anda tidak akan mempengaruhi kalkulasi drawdown harian ini selama posisi belum ditutup, memberikan kebebasan bernapas bagi trader swing.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 2: AUTHENTICATION (LOGIN) -->
+        <section id="view-auth-login" class="view-section hidden px-4 py-20 max-w-md mx-auto animate-fade-in">
+            <div class="bg-slate-900/40 border border-slate-900 rounded-3xl p-8 backdrop-blur-md relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-blue-600/10 rounded-full blur-2xl"></div>
+                <div class="text-center mb-8">
+                    <h2 class="text-2xl font-bold text-white">Portal Trader</h2>
+                    <p class="text-xs text-slate-400 mt-2">Masuk ke Client Portal untuk memantau performa akun trading Anda.</p>
+                </div>
+                
+                <form id="form-login" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Alamat Email</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
+                                <i data-lucide="mail" class="w-4 h-4"></i>
+                            </span>
+                            <input type="email" id="login-email" required placeholder="trader@email.com" class="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-3 pl-10 pr-4 text-sm text-white focus:outline-none transition-colors">
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Password</label>
+                        </div>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
+                                <i data-lucide="lock" class="w-4 h-4"></i>
+                            </span>
+                            <input type="password" id="login-password" required placeholder="••••••••" class="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-3 pl-10 pr-4 text-sm text-white focus:outline-none transition-colors">
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full py-3.5 mt-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all shadow-md shadow-blue-500/10">
+                        Masuk Portal
+                    </button>
+                </form>
+
+                <div class="mt-8 pt-6 border-t border-slate-800/60 text-center">
+                    <span class="text-xs text-slate-400">Belum punya akun challenge? </span>
+                    <button onclick="switchView('auth-register')" class="text-xs text-blue-500 font-bold hover:underline">Daftar di Sini</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 3: AUTHENTICATION (REGISTER) -->
+        <section id="view-auth-register" class="view-section hidden px-4 py-20 max-w-md mx-auto">
+            <div class="bg-slate-900/40 border border-slate-900 rounded-3xl p-8 backdrop-blur-md relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-blue-600/10 rounded-full blur-2xl"></div>
+                <div class="text-center mb-8">
+                    <h2 class="text-2xl font-bold text-white">Daftar Akun Trader</h2>
+                    <p class="text-xs text-slate-400 mt-2">Mulai langkah awal Anda meraih akun funded profesional hari ini.</p>
+                </div>
+                
+                <form id="form-register" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Nama Lengkap</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
+                                <i data-lucide="user" class="w-4 h-4"></i>
+                            </span>
+                            <input type="text" id="register-name" required placeholder="Masukan nama lengkap Anda" class="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-3 pl-10 pr-4 text-sm text-white focus:outline-none transition-colors">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Alamat Email</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
+                                <i data-lucide="mail" class="w-4 h-4"></i>
+                            </span>
+                            <input type="email" id="register-email" required placeholder="trader@email.com" class="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-3 pl-10 pr-4 text-sm text-white focus:outline-none transition-colors">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Password Baru</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
+                                <i data-lucide="lock" class="w-4 h-4"></i>
+                            </span>
+                            <input type="password" id="register-password" required placeholder="Buat sandi yang aman" class="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-3 pl-10 pr-4 text-sm text-white focus:outline-none transition-colors">
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-2.5 py-2">
+                        <input type="checkbox" id="terms-check" required class="mt-1 accent-blue-600">
+                        <label for="terms-check" class="text-xs text-slate-400 leading-normal">
+                            Saya menyetujui seluruh aturan evaluasi target, drawdown limit harian, serta pembagian keuntungan platform.
+                        </label>
+                    </div>
+                    <button type="submit" class="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all shadow-md">
+                        Registrasi Sekarang
+                    </button>
+                </form>
+
+                <div class="mt-8 pt-6 border-t border-slate-800/60 text-center">
+                    <span class="text-xs text-slate-400">Sudah punya akun? </span>
+                    <button onclick="switchView('auth-login')" class="text-xs text-blue-500 font-bold hover:underline">Login di Sini</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 4: TRADER DASHBOARD -->
+        <section id="view-dashboard" class="view-section hidden px-4 lg:px-8 pt-8 max-w-7xl mx-auto">
+            <!-- Top Dashboard Banner -->
+            <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8">
+                <div>
+                    <span class="text-xs text-slate-500 uppercase tracking-wider font-extrabold">Client Portal Dashboard</span>
+                    <h2 class="text-3xl font-extrabold text-white mt-1">Selamat datang kembali, <span id="dashboard-user-name">Trader</span>!</h2>
+                </div>
+                
+                <!-- Account Dropdown Selector -->
+                <div class="flex items-center gap-3">
+                    <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Trading Account:</label>
+                    <select id="dashboard-account-select" onchange="handleAccountChange(this.value)" class="bg-slate-900 border border-slate-800 focus:border-blue-500 py-2.5 px-3 text-sm text-white rounded-xl focus:outline-none font-semibold cursor-pointer">
+                        <!-- Loaded dynamically -->
+                    </select>
+                </div>
+            </div>
+
+            <!-- Dashboard Tabs Navigation (FundedNext layout style) -->
+            <div class="flex items-center gap-1 border-b border-slate-900/80 mb-8 overflow-x-auto pb-px">
+                <button onclick="switchDashboardTab('overview')" id="btn-tab-overview" class="px-5 py-3.5 text-xs font-bold tracking-wider uppercase transition-all flex items-center gap-2 border-b-2 border-blue-500 text-white bg-blue-500/5">
+                    <i data-lucide="activity" class="w-4 h-4"></i> Overview Performa
+                </button>
+                <button onclick="switchDashboardTab('stats')" id="btn-tab-stats" class="px-5 py-3.5 text-xs font-bold tracking-wider uppercase transition-all flex items-center gap-2 border-b-2 border-transparent text-slate-400 hover:text-white">
+                    <i data-lucide="pie-chart" class="w-4 h-4"></i> Statistik Detil
+                </button>
+                <button onclick="switchDashboardTab('journal')" id="btn-tab-journal" class="px-5 py-3.5 text-xs font-bold tracking-wider uppercase transition-all flex items-center gap-2 border-b-2 border-transparent text-slate-400 hover:text-white">
+                    <i data-lucide="book-open" class="w-4 h-4"></i> Jurnal Posisi
+                </button>
+                <button onclick="switchDashboardTab('calendar')" id="btn-tab-calendar" class="px-5 py-3.5 text-xs font-bold tracking-wider uppercase transition-all flex items-center gap-2 border-b-2 border-transparent text-slate-400 hover:text-white">
+                    <i data-lucide="calendar" class="w-4 h-4"></i> Kalender Ekonomi
+                </button>
+                <button onclick="switchDashboardTab('payout')" id="btn-tab-payout" class="px-5 py-3.5 text-xs font-bold tracking-wider uppercase transition-all flex items-center gap-2 border-b-2 border-transparent text-slate-400 hover:text-white">
+                    <i data-lucide="wallet" class="w-4 h-4"></i> Payout Room
+                </button>
+                <button onclick="switchDashboardTab('shop')" id="btn-tab-shop" class="px-5 py-3.5 text-xs font-bold tracking-wider uppercase transition-all flex items-center gap-2 border-b-2 border-transparent text-slate-400 hover:text-white">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i> Beli Challenge Baru
+                </button>
+            </div>
+
+            <!-- TAB 1: OVERVIEW -->
+            <div id="tab-overview" class="dashboard-tab-content space-y-8">
+                <!-- ACCOUNT STATUS METRIC BLOCKS -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <!-- Current Balance -->
+                    <div class="bg-slate-900/40 border border-slate-900 p-5 rounded-2xl">
+                        <span class="text-xs text-slate-500 uppercase tracking-wider font-semibold block">Current Balance</span>
+                        <span id="metric-balance" class="text-3xl font-extrabold text-white mt-1 block">$0</span>
+                        <div class="flex items-center gap-1.5 mt-2 text-xs">
+                            <span class="text-slate-400">Modal Awal:</span>
+                            <span id="metric-initial-balance" class="font-bold text-slate-300">$0</span>
+                        </div>
+                    </div>
+
+                    <!-- Current Equity -->
+                    <div class="bg-slate-900/40 border border-slate-900 p-5 rounded-2xl">
+                        <span class="text-xs text-slate-500 uppercase tracking-wider font-semibold block">Current Equity</span>
+                        <span id="metric-equity" class="text-3xl font-extrabold text-blue-400 mt-1 block">$0</span>
+                        <div class="flex items-center gap-1.5 mt-2 text-xs">
+                            <span class="text-slate-400">Status Akun:</span>
+                            <span id="metric-account-status" class="px-2.5 py-0.5 rounded-full font-extrabold text-[9px] uppercase bg-slate-950/40 text-slate-400 border border-slate-900">
+                                None
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Cumulative Profit -->
+                    <div class="bg-slate-900/40 border border-slate-900 p-5 rounded-2xl">
+                        <span class="text-xs text-slate-500 uppercase tracking-wider font-semibold block">Profit Terkumpul</span>
+                        <span id="metric-profit-gained" class="text-3xl font-extrabold mt-1 block text-slate-400">$0</span>
+                        <div class="flex items-center gap-1.5 mt-2 text-xs">
+                            <span class="text-slate-400">Target Profit:</span>
+                            <span id="metric-profit-target" class="font-bold text-slate-300">$0</span>
+                        </div>
+                    </div>
+
+                    <!-- Days Traded -->
+                    <div class="bg-slate-900/40 border border-slate-900 p-5 rounded-2xl">
+                        <span class="text-xs text-slate-500 uppercase tracking-wider font-semibold block">Hari Aktif Trading</span>
+                        <span id="metric-days-traded" class="text-3xl font-extrabold text-white mt-1 block">0 Hari</span>
+                        <div class="flex items-center gap-1.5 mt-2 text-xs">
+                            <span class="text-slate-400">Syarat Minimum:</span>
+                            <span class="font-bold text-slate-300">5 Hari</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VISUAL CHART AREA & TARGET METRICS BAR -->
+                <div class="grid lg:grid-cols-3 gap-6">
+                    <!-- ChartJS Container -->
+                    <div class="lg:col-span-2 bg-slate-900/20 border border-slate-900 p-6 rounded-3xl">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                                <i data-lucide="line-chart" class="w-5 h-5 text-blue-500"></i> Kurva Ekuitas & Balance
+                            </h3>
+                            <span class="text-xs text-slate-500">Terupdate Real-Time</span>
+                        </div>
+                        <div class="h-72 w-full relative">
+                            <canvas id="performanceChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Objectives Progress Panel -->
+                    <div class="bg-slate-900/40 border border-slate-900 p-6 rounded-3xl flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-lg font-bold text-white mb-6">Analisis Objectives</h3>
+                            
+                            <div class="space-y-5">
+                                <!-- Daily Loss Progress (Balance-Based warning) -->
+                                <div>
+                                    <div class="flex justify-between text-xs mb-1.5">
+                                        <span class="text-slate-400 flex items-center gap-1">Kerugian Harian (Max <span id="objective-daily-max">$0</span>)</span>
+                                        <span id="objective-daily-current" class="font-bold text-slate-200">$0</span>
+                                    </div>
+                                    <div class="w-full bg-slate-950 h-2 rounded-full overflow-hidden border border-slate-900">
+                                        <div id="bar-daily-loss" class="h-full rounded-full bg-amber-500" style="width: 0%"></div>
+                                    </div>
+                                    <span class="text-[9px] text-slate-500 block mt-1">Dihitung berdasarkan saldo awal hari.</span>
+                                </div>
+
+                                <!-- Overall Maximum Loss Progress -->
+                                <div>
+                                    <div class="flex justify-between text-xs mb-1.5">
+                                        <span class="text-slate-400">Kerugian Keseluruhan (Max <span id="objective-max-loss-limit">$0</span>)</span>
+                                        <span id="objective-max-loss-current" class="font-bold text-slate-200">$0</span>
+                                    </div>
+                                    <div class="w-full bg-slate-950 h-2 rounded-full overflow-hidden border border-slate-900">
+                                        <div id="bar-max-loss" class="h-full rounded-full bg-red-400" style="width: 0%"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Profit Target Progress -->
+                                <div>
+                                    <div class="flex justify-between text-xs mb-1.5">
+                                        <span class="text-slate-400">Target Profit (Goal: <span id="objective-profit-target">$0</span>)</span>
+                                        <span id="objective-profit-current" class="font-bold text-emerald-400">$0</span>
+                                    </div>
+                                    <div class="w-full bg-slate-950 h-2 rounded-full overflow-hidden border border-slate-900">
+                                        <div id="bar-profit-target" class="h-full bg-emerald-500 rounded-full" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Certificate and status system -->
+                        <div class="pt-6 border-t border-slate-800/60 mt-6 flex flex-col gap-3">
+                            <div class="flex items-center gap-3">
+                                <div id="evaluation-status-icon-container" class="p-2 rounded-xl bg-slate-800 text-slate-400">
+                                    <i data-lucide="check-circle" class="w-5 h-5"></i>
+                                </div>
+                                <div>
+                                    <span class="block text-sm font-bold text-white">Evaluasi Sistem</span>
+                                    <span id="evaluation-status-desc" class="text-xs text-slate-500">Mencari detail status akun Anda...</span>
+                                </div>
+                            </div>
+                            <!-- Certificate Trigger (Stellar style) -->
+                            <button id="btn-certificate" onclick="triggerCertificate()" class="hidden w-full py-2.5 bg-gradient-to-r from-amber-500 to-yellow-600 text-slate-950 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-md">
+                                <i data-lucide="award" class="w-4 h-4"></i> Unduh Sertifikat Kelulusan
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RECENT TRADING JOURNAL & QUICK SIMULATOR -->
+                <div class="grid lg:grid-cols-3 gap-6">
+                    <!-- Journal Table Summary -->
+                    <div class="lg:col-span-2 bg-slate-900/40 border border-slate-900 rounded-3xl p-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-lg font-bold text-white">Posisi Terakhir Terbuka</h3>
+                            <button onclick="switchDashboardTab('journal')" class="text-xs text-blue-500 font-semibold hover:underline flex items-center gap-1">
+                                Lihat Jurnal <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm text-slate-400">
+                                <thead>
+                                    <tr class="border-b border-slate-800/80 text-xs text-slate-500 uppercase tracking-wider">
+                                        <th class="pb-3 font-semibold">Asset Pair</th>
+                                        <th class="pb-3 font-semibold">Tipe</th>
+                                        <th class="pb-3 font-semibold">Lots</th>
+                                        <th class="pb-3 font-semibold text-right">Profit / Loss</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dashboard-recent-trades-tbody">
+                                    <!-- Dynamic trades load -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Sandbox Trading Simulator Form -->
+                    <div class="bg-slate-900/40 border border-slate-900 p-6 rounded-3xl">
+                        <h3 class="text-lg font-bold text-white mb-2">Simulasikan Trading</h3>
+                        <p class="text-xs text-slate-400 mb-6">Gunakan form di bawah untuk mensimulasikan hasil eksekusi trade di pasar secara interaktif.</p>
+
+                        <form id="form-simulation-trade" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Asset Pair</label>
+                                <select id="sim-pair" class="w-full bg-slate-950 border border-slate-800 py-2.5 px-3 text-sm text-white rounded-xl focus:outline-none">
+                                    <option value="XAUUSD">GOLD (XAUUSD)</option>
+                                    <option value="EURUSD">EURUSD</option>
+                                    <option value="GBPUSD">GBPUSD</option>
+                                    <option value="BTCUSD">BTCUSD</option>
+                                </select>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Tipe Posisi</label>
+                                    <div class="grid grid-cols-2 gap-1.5 bg-slate-950 p-1 border border-slate-800 rounded-xl">
+                                        <button type="button" id="btn-sim-buy" onclick="setSimType('BUY')" class="py-1 rounded font-bold text-xs text-center transition-all bg-emerald-600 text-white">
+                                            BUY
+                                        </button>
+                                        <button type="button" id="btn-sim-sell" onclick="setSimType('SELL')" class="py-1 rounded font-bold text-xs text-center transition-all text-slate-400 hover:text-white">
+                                            SELL
+                                        </button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Lots size</label>
+                                    <input type="text" id="sim-lots" value="1.0" class="w-full bg-slate-950 border border-slate-800 py-2 px-3 text-sm text-white rounded-xl focus:outline-none text-center">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Simulasi Payout/Loss (USD)</label>
+                                <input type="number" id="sim-profit" value="150" class="w-full bg-slate-950 border border-slate-800 py-2.5 px-3 text-sm text-white rounded-xl focus:outline-none font-semibold text-center">
+                            </div>
+
+                            <button type="submit" id="btn-submit-simulation" class="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-sm transition-all shadow-md shadow-blue-500/10">
+                                Kirim Hasil Trading
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: DETAILED STATS (FundedNext features) -->
+            <div id="tab-stats" class="dashboard-tab-content hidden space-y-6">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="bg-slate-900/40 border border-slate-900 p-5 rounded-2xl">
+                        <span class="text-xs text-slate-500 uppercase tracking-wider font-semibold block">Win Rate</span>
+                        <span id="stat-win-rate" class="text-3xl font-extrabold text-emerald-400 mt-1 block">0%</span>
+                        <span class="text-[10px] text-slate-500 block mt-1">Perbandingan trade profit vs loss.</span>
+                    </div>
+                    <div class="bg-slate-900/40 border border-slate-900 p-5 rounded-2xl">
+                        <span class="text-xs text-slate-500 uppercase tracking-wider font-semibold block">Profit Factor</span>
+                        <span id="stat-profit-factor" class="text-3xl font-extrabold text-blue-400 mt-1 block">0.00</span>
+                        <span class="text-[10px] text-slate-500 block mt-1">Total keuntungan / total kerugian.</span>
+                    </div>
+                    <div class="bg-slate-900/40 border border-slate-900 p-5 rounded-2xl">
+                        <span class="text-xs text-slate-500 uppercase tracking-wider font-semibold block">Rata-rata Profit</span>
+                        <span id="stat-avg-win" class="text-3xl font-extrabold text-emerald-400 mt-1 block">$0</span>
+                        <span class="text-[10px] text-slate-500 block mt-1">Nilai rata-rata keuntungan transaksi.</span>
+                    </div>
+                    <div class="bg-slate-900/40 border border-slate-900 p-5 rounded-2xl">
+                        <span class="text-xs text-slate-500 uppercase tracking-wider font-semibold block">Rata-rata Loss</span>
+                        <span id="stat-avg-loss" class="text-3xl font-extrabold text-red-400 mt-1 block">$0</span>
+                        <span class="text-[10px] text-slate-500 block mt-1">Nilai rata-rata kerugian transaksi.</span>
+                    </div>
+                </div>
+
+                <div class="grid lg:grid-cols-2 gap-6">
+                    <div class="bg-slate-900/40 border border-slate-900 p-6 rounded-3xl">
+                        <h3 class="text-lg font-bold text-white mb-4">Informasi Distribusi Transaksi</h3>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center py-2 border-b border-slate-800/80">
+                                <span class="text-xs text-slate-400">Total Transaksi Selesai</span>
+                                <span id="stat-total-trades" class="text-xs font-bold text-white">0</span>
+                            </div>
+                            <div class="flex justify-between items-center py-2 border-b border-slate-800/80">
+                                <span class="text-xs text-slate-400">Transaksi Menguntungkan</span>
+                                <span id="stat-profitable-trades" class="text-xs font-bold text-emerald-400">0</span>
+                            </div>
+                            <div class="flex justify-between items-center py-2 border-b border-slate-800/80">
+                                <span class="text-xs text-slate-400">Transaksi Merugikan</span>
+                                <span id="stat-losing-trades" class="text-xs font-bold text-red-400">0</span>
+                            </div>
+                            <div class="flex justify-between items-center py-2">
+                                <span class="text-xs text-slate-400">Rasio Sharpe (Sharpe Ratio)</span>
+                                <span id="stat-sharpe-ratio" class="text-xs font-bold text-blue-400">1.84</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-900/40 border border-slate-900 p-6 rounded-3xl">
+                        <h3 class="text-lg font-bold text-white mb-4">Instruksi Pengelolaan Performa</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed mb-4">
+                            FundedNext mendorong trader untuk memprioritaskan konsistensi ukuran lot dan menghindari "revenge trading" atau pelipatgandaan lot secara agresif ketika menghadapi drawdown.
+                        </p>
+                        <div class="p-4 rounded-xl bg-slate-950 border border-slate-900 flex gap-3">
+                            <i data-lucide="lightbulb" class="w-5 h-5 text-amber-400 flex-shrink-0"></i>
+                            <p class="text-[11px] text-slate-400 leading-relaxed">
+                                <strong class="text-white">Tip:</strong> Jaga Win Rate Anda di atas 50% dan Profit Factor di atas 1.50 untuk memenuhi syarat kenaikan alokasi modal (Scaling Plan) ke tahap berikutnya.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: JOURNAL -->
+            <div id="tab-journal" class="dashboard-tab-content hidden bg-slate-900/40 border border-slate-900 p-6 rounded-3xl animate-in fade-in duration-300">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h3 class="text-xl font-bold text-white">Jurnal Perdagangan Terperinci</h3>
+                        <p class="text-xs text-slate-400 mt-1">Gunakan riwayat perdagangan ini untuk melakukan evaluasi performa manajemen risiko Anda secara berkelanjutan.</p>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-slate-400">
+                        <thead>
+                            <tr class="border-b border-slate-800 text-xs text-slate-500 uppercase tracking-wider">
+                                <th class="pb-4 font-semibold">Trade ID</th>
+                                <th class="pb-4 font-semibold">Waktu Eksekusi</th>
+                                <th class="pb-4 font-semibold">Pasangan Aset</th>
+                                <th class="pb-4 font-semibold">Tipe Posisi</th>
+                                <th class="pb-4 font-semibold">Lot Size</th>
+                                <th class="pb-4 font-semibold text-right">Profit / Loss (USD)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dashboard-full-journal-tbody">
+                            <!-- Loaded dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB 4: CALENDAR (High impact news filter) -->
+            <div id="tab-calendar" class="dashboard-tab-content hidden space-y-6">
+                <div class="bg-slate-900/40 border border-slate-900 p-6 rounded-3xl">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                        <div>
+                            <h3 class="text-xl font-bold text-white">Kalender Berita Makro (High Impact News)</h3>
+                            <p class="text-xs text-slate-400 mt-1">Hati-hati, rilis berita merah (High Impact) dapat menimbulkan fluktuasi harga yang ekstrim.</p>
+                        </div>
+                        <span class="px-3 py-1 text-xs font-bold text-amber-400 bg-amber-950/40 border border-amber-900 rounded-lg">Rule: Hold positions during news allowed</span>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs sm:text-sm text-slate-400">
+                            <thead>
+                                <tr class="border-b border-slate-800 text-slate-500 uppercase tracking-wider">
+                                    <th class="pb-3">Mata Uang</th>
+                                    <th class="pb-3">Acara / Berita</th>
+                                    <th class="pb-3">Prakiraan</th>
+                                    <th class="pb-3">Dampak</th>
+                                    <th class="pb-3 text-right">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="border-b border-slate-800/40">
+                                    <td class="py-4 font-bold text-white">USD</td>
+                                    <td class="py-4">Non-Farm Employment Change (NFP)</td>
+                                    <td class="py-4">185K</td>
+                                    <td class="py-4"><span class="px-2 py-0.5 bg-red-950/60 text-red-400 border border-red-900 rounded-lg font-bold text-[10px]">HIGH (RED)</span></td>
+                                    <td class="py-4 text-right text-slate-500 font-semibold">Telah Rilis</td>
+                                </tr>
+                                <tr class="border-b border-slate-800/40">
+                                    <td class="py-4 font-bold text-white">USD</td>
+                                    <td class="py-4">FOMC Economic Projections</td>
+                                    <td class="py-4">-</td>
+                                    <td class="py-4"><span class="px-2 py-0.5 bg-red-950/60 text-red-400 border border-red-900 rounded-lg font-bold text-[10px]">HIGH (RED)</span></td>
+                                    <td class="py-4 text-right text-amber-400 font-semibold">Hari Ini (20:00)</td>
+                                </tr>
+                                <tr class="border-b border-slate-800/40">
+                                    <td class="py-4 font-bold text-white">EUR</td>
+                                    <td class="py-4">Main Refinancing Rate Decision</td>
+                                    <td class="py-4">4.25%</td>
+                                    <td class="py-4"><span class="px-2 py-0.5 bg-red-950/60 text-red-400 border border-red-900 rounded-lg font-bold text-[10px]">HIGH (RED)</span></td>
+                                    <td class="py-4 text-right text-slate-400 font-semibold">Besok (19:45)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 5: PAYOUT ROOM (FundedNext features) -->
+            <div id="tab-payout" class="dashboard-tab-content hidden space-y-6">
+                <div class="grid md:grid-cols-3 gap-6">
+                    <div class="md:col-span-2 bg-slate-900/40 border border-slate-900 p-6 rounded-3xl flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-xl font-bold text-white mb-2">Penarikan Keuntungan (Payout Request)</h3>
+                            <p class="text-xs text-slate-400 mb-6">
+                                Anda dapat mencairkan bagian keuntungan Anda secara instan ke dompet kripto ataupun rekening bank berlisensi.
+                            </p>
+
+                            <div class="grid grid-cols-2 gap-4 mb-6">
+                                <div class="p-4 rounded-xl bg-slate-950 border border-slate-900">
+                                    <span class="text-xs text-slate-500 block">Profit Siap Tarik</span>
+                                    <span id="payout-available-profit" class="text-2xl font-black text-emerald-400">$0</span>
+                                </div>
+                                <div class="p-4 rounded-xl bg-slate-950 border border-slate-900">
+                                    <span class="text-xs text-slate-500 block">Proporsi Bagi Hasil</span>
+                                    <span class="text-2xl font-black text-white">80% / 20%</span>
+                                </div>
+                            </div>
+
+                            <form id="form-payout-request" class="space-y-4">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Metode Pembayaran</label>
+                                    <select id="payout-method" class="w-full bg-slate-950 border border-slate-800 py-2.5 px-3 text-sm text-white rounded-xl focus:outline-none">
+                                        <option value="USDT">Crypto Tether (USDT-TRC20)</option>
+                                        <option value="Deel">Deel Contractor Invoice</option>
+                                        <option value="Bank">Transfer Bank Internasional</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Alamat Dompet / Info Rekening</label>
+                                    <input type="text" id="payout-address" required placeholder="T9yD14Nj9yD14Nj9yD14Nj9yD14Nj..." class="w-full bg-slate-950 border border-slate-800 py-2.5 px-3 text-xs sm:text-sm text-white rounded-xl focus:outline-none font-mono-custom">
+                                </div>
+                                <button type="submit" class="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-slate-950 font-black rounded-xl text-sm transition-all shadow-md shadow-emerald-500/10">
+                                    Kirim Permintaan Payout
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- 24-Hour Promise panel -->
+                    <div class="bg-slate-900/40 border border-slate-900 p-6 rounded-3xl flex flex-col justify-between text-center relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-24 h-24 bg-emerald-500/10 rounded-full blur-xl"></div>
+                        <div>
+                            <span class="text-emerald-400 font-extrabold uppercase tracking-widest text-xs">GARANSI PAYOUT</span>
+                            <h4 class="text-2xl font-extrabold text-white mt-3">Janji 24 Jam Proses</h4>
+                            <p class="text-xs text-slate-400 leading-relaxed mt-4">
+                                Kami menjamin proses pengiriman dana penarikan Anda selesai dalam waktu kurang dari 24 jam. Jika terbukti melebihi tenggat waktu, kami akan memberikan bonus tambahan $1,000 secara cuma-cuma!
+                            </p>
+                        </div>
+                        <div class="p-4 rounded-xl bg-slate-950/60 border border-slate-900 text-left mt-6">
+                            <span class="text-[10px] text-slate-500 uppercase font-extrabold block mb-1">Status Kecepatan Server</span>
+                            <div class="flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+                                <span class="text-xs text-emerald-400 font-bold">Rata-rata Proses: 4.8 Jam</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 6: SHOP -->
+            <div id="tab-shop" class="dashboard-tab-content hidden space-y-8 animate-in fade-in duration-300">
+                <div class="text-center max-w-2xl mx-auto py-4">
+                    <h3 class="text-2xl font-bold text-white mb-2">Tambah Ukuran Modal Anda</h3>
+                    <p class="text-sm text-slate-400">Butuh daya beli lebih besar? Ambil tantangan program evaluasi tambahan hari ini.</p>
+                </div>
+
+                <div id="shop-packages-grid" class="grid md:grid-cols-3 gap-6">
+                    <!-- Dynamic Loading of challenges Packages -->
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- CERTIFICATE MODAL VIEW -->
+    <div id="certificate-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-gradient-to-tr from-slate-950 via-slate-900 to-indigo-950/60 border border-amber-500/30 rounded-3xl p-8 max-w-2xl w-full text-center relative overflow-hidden shadow-2xl">
+            <div class="absolute -top-12 -left-12 w-32 h-32 bg-amber-500/10 rounded-full blur-xl"></div>
+            <div class="absolute -bottom-12 -right-12 w-32 h-32 bg-blue-500/10 rounded-full blur-xl"></div>
+
+            <button onclick="closeCertificate()" class="absolute top-4 right-4 p-2 text-slate-400 hover:text-white">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+
+            <!-- Certificate design -->
+            <div class="border-2 border-amber-500/20 p-6 rounded-2xl relative">
+                <span class="text-amber-500 font-extrabold uppercase tracking-widest text-[10px] block mb-4">SERTIFIKAT KELULUSAN RESMI</span>
+                <div class="w-16 h-16 rounded-full bg-amber-500/10 border-2 border-amber-500/20 flex items-center justify-center mx-auto mb-6">
+                    <i data-lucide="award" class="w-8 h-8 text-amber-500 animate-pulse"></i>
+                </div>
+                <h3 class="text-2xl font-extrabold text-white tracking-wide">NEXUS FUNDING ELITE TRADER</h3>
+                <p class="text-xs text-slate-400 mt-2">Dengan ini diberikan penghargaan penuh atas kedisiplinan dan keberhasilan kepada:</p>
+                
+                <h4 id="certificate-name" class="text-2xl font-bold tracking-tight text-white my-6 border-b border-slate-800 pb-3 max-w-sm mx-auto">TRADER PROFESSIONAL</h4>
+                
+                <p class="text-xs text-slate-400 leading-relaxed max-w-md mx-auto">
+                    Telah berhasil menuntaskan seluruh tantangan evaluasi pengelolaan risiko **Stellar Challenge Phase 2** dengan kriteria disiplin yang luar biasa.
+                </p>
+
+                <div class="grid grid-cols-2 gap-4 mt-8 pt-6 border-t border-slate-800/80">
+                    <div>
+                        <span class="text-[10px] text-slate-500 uppercase block">Tanggal Verifikasi</span>
+                        <span class="text-xs font-bold text-slate-300">Juni 2026</span>
+                    </div>
+                    <div>
+                        <span class="text-[10px] text-slate-500 uppercase block">Direktur Kepatuhan</span>
+                        <span class="text-xs font-bold text-slate-300">Nexus Funding</span>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-  );
-}
+
+    <!-- SYSTEM FOOTER -->
+    <footer class="border-t border-slate-900 bg-slate-950 px-4 py-12 text-center text-xs text-slate-500">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+            <div class="flex items-center gap-2">
+                <div class="w-6 h-6 rounded bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center">
+                    <i data-lucide="trending-up" class="w-3.5 h-3.5 text-white"></i>
+                </div>
+                <span class="font-bold text-slate-300">NEXUS FUNDING</span>
+            </div>
+            
+            <div class="flex gap-6">
+                <a href="#" class="hover:text-white transition-colors">Syarat & Ketentuan</a>
+                <a href="#" class="hover:text-white transition-colors">Kebijakan Privasi</a>
+                <a href="#" class="hover:text-white transition-colors">Hubungi Dukungan</a>
+            </div>
+
+            <p>© 2026 Nexus Funding Prototype. Hak Cipta Dilindungi Undang-Undang.</p>
+        </div>
+    </footer>
+
+    <!-- FIREBASE AND CLIENT PORTAL MODULE LOGIC -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'funded-web';
+        
+        // Firebase Configuration provided by user for funded-web project
+        const firebaseConfig = {
+            apiKey: "AIzaSyBCygTUblLWE6ueUX40FmYOH4_Av2oXIEs",
+            authDomain: "funded-web.firebaseapp.com",
+            projectId: "funded-web",
+            storageBucket: "funded-web.firebasestorage.app",
+            messagingSenderId: "298469648996",
+            appId: "1:298469648996:web:6c5df461db78f3cdc4cd71",
+            measurementId: "G-JSPCMN9J32"
+        };
+
+        // Initialize Firebase safely
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // State variables
+        let currentUser = null;
+        let accounts = [];
+        let selectedAccount = null;
+        let performanceChartInstance = null;
+        let currentSimType = 'BUY';
+        let useLocalDatabaseFallback = false;
+
+        // Static Challenge Packages definition matching FundedNext models
+        const CHALLENGE_PACKAGES = [
+            // Stellar 2-Step
+            { id: 'st-2s-6k', model: 'stellar-2step', size: 6000, fee: 49, target: 480, dailyLimit: 300, maxLimit: 600, type: 'Stellar 2-Step Phase 1' },
+            { id: 'st-2s-15k', model: 'stellar-2step', size: 15000, fee: 99, target: 1200, dailyLimit: 750, maxLimit: 1500, type: 'Stellar 2-Step Phase 1' },
+            { id: 'st-2s-50k', model: 'stellar-2step', size: 50000, fee: 299, target: 4000, dailyLimit: 2500, maxLimit: 5000, type: 'Stellar 2-Step Phase 1' },
+            { id: 'st-2s-100k', model: 'stellar-2step', size: 100000, fee: 499, target: 8000, dailyLimit: 5000, maxLimit: 10000, type: 'Stellar 2-Step Phase 1' },
+            { id: 'st-2s-200k', model: 'stellar-2step', size: 200000, fee: 999, target: 16000, dailyLimit: 10000, maxLimit: 20000, type: 'Stellar 2-Step Phase 1' },
+
+            // Stellar 1-Step
+            { id: 'st-1s-6k', model: 'stellar-1step', size: 6000, fee: 59, target: 600, dailyLimit: 180, maxLimit: 360, type: 'Stellar 1-Step' },
+            { id: 'st-1s-15k', model: 'stellar-1step', size: 15000, fee: 119, target: 1500, dailyLimit: 450, maxLimit: 900, type: 'Stellar 1-Step' },
+            { id: 'st-1s-50k', model: 'stellar-1step', size: 50000, fee: 349, target: 5000, dailyLimit: 1500, maxLimit: 3000, type: 'Stellar 1-Step' },
+            { id: 'st-1s-100k', model: 'stellar-1step', size: 100000, fee: 599, target: 10000, dailyLimit: 3000, maxLimit: 6000, type: 'Stellar 1-Step' },
+
+            // Evaluation Model
+            { id: 'ev-6k', model: 'evaluation', size: 6000, fee: 49, target: 600, dailyLimit: 300, maxLimit: 600, type: 'Evaluation Phase 1' },
+            { id: 'ev-15k', model: 'evaluation', size: 15000, fee: 99, target: 1500, dailyLimit: 750, maxLimit: 1500, type: 'Evaluation Phase 1' },
+            { id: 'ev-50k', model: 'evaluation', size: 50000, fee: 299, target: 5000, dailyLimit: 2500, maxLimit: 5000, type: 'Evaluation Phase 1' },
+            { id: 'ev-100k', model: 'evaluation', size: 100000, fee: 499, target: 10000, dailyLimit: 5000, maxLimit: 10000, type: 'Evaluation Phase 1' },
+
+            // Express Model
+            { id: 'ex-6k', model: 'express', size: 6000, fee: 39, target: 1500, dailyLimit: 300, maxLimit: 600, type: 'Express' },
+            { id: 'ex-15k', model: 'express', size: 15000, fee: 79, target: 3750, dailyLimit: 750, maxLimit: 1500, type: 'Express' },
+            { id: 'ex-50k', model: 'express', size: 50000, fee: 269, target: 12500, dailyLimit: 2500, maxLimit: 5000, type: 'Express' },
+            { id: 'ex-100k', model: 'express', size: 100000, fee: 449, target: 25000, dailyLimit: 5000, maxLimit: 10000, type: 'Express' }
+        ];
+        
+        let selectedModel = 'stellar-2step';
+        let selectedPackageIndex = 2; // default $50k selected on landing
+
+        // Global Utility: Toast Notifications
+        window.showToast = function(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+
+            const toast = document.createElement('div');
+            toast.className = `flex items-center gap-3 p-4 rounded-2xl border backdrop-blur-md shadow-lg pointer-events-auto transform transition-all duration-300 translate-y-2 opacity-0`;
+            
+            let bgClass = 'bg-slate-900/90 border-slate-800 text-slate-100';
+            let icon = 'info';
+            
+            if (type === 'success') {
+                bgClass = 'bg-emerald-950/90 border-emerald-900 text-emerald-400';
+                icon = 'check-circle';
+            } else if (type === 'error') {
+                bgClass = 'bg-red-950/90 border-red-900 text-red-400';
+                icon = 'x-circle';
+            } else if (type === 'warn') {
+                bgClass = 'bg-amber-950/90 border-amber-900 text-amber-400';
+                icon = 'alert-triangle';
+            }
+
+            toast.className += ` ${bgClass}`;
+            toast.innerHTML = `
+                <i data-lucide="${icon}" class="w-5 h-5 flex-shrink-0"></i>
+                <div class="text-xs font-semibold leading-relaxed">${message}</div>
+            `;
+            
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            // Animate In
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+                toast.classList.add('translate-y-0', 'opacity-100');
+            }, 10);
+
+            // Animate Out & Destroy
+            setTimeout(() => {
+                toast.classList.add('translate-y-[-20px]', 'opacity-0');
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, 4000);
+        }
+
+        // Authentication state observer
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('guest-header-actions').classList.add('hidden');
+                document.getElementById('user-header-actions').classList.remove('hidden');
+                document.getElementById('mobile-guest-actions').classList.add('hidden');
+                document.getElementById('mobile-user-actions').classList.remove('hidden');
+                
+                // Safe evaluation check to prevent split of null error on anonymous accounts
+                const dispName = user.displayName || (user.email ? user.email.split('@')[0].toUpperCase() : 'GUEST TRADER');
+                document.getElementById('header-display-name').innerText = dispName;
+                document.getElementById('mobile-display-name').innerText = `Hi, ${dispName}`;
+                document.getElementById('dashboard-user-name').innerText = dispName;
+                
+                showToast(`Koneksi Akun Berhasil: Selamat Datang ${dispName}`, 'success');
+                
+                // Initialize user firestore setup and realtime listener
+                await setupUserAccountsListener(user.uid);
+            } else {
+                currentUser = null;
+                document.getElementById('guest-header-actions').classList.remove('hidden');
+                document.getElementById('user-header-actions').classList.add('hidden');
+                document.getElementById('mobile-guest-actions').classList.remove('hidden');
+                document.getElementById('mobile-user-actions').classList.add('hidden');
+                accounts = [];
+                selectedAccount = null;
+            }
+        });
+
+        // Initialize Firestore listening process (Rule 1: Strict paths used)
+        async function setupUserAccountsListener(userId) {
+            if (useLocalDatabaseFallback) {
+                loadLocalBackupAccounts(userId);
+                return;
+            }
+            try {
+                const accountsCollectionRef = collection(db, 'artifacts', appId, 'users', userId, 'accounts');
+                
+                onSnapshot(accountsCollectionRef, (querySnapshot) => {
+                    const fetchedAccounts = [];
+                    querySnapshot.forEach((docSnap) => {
+                        fetchedAccounts.push({
+                            id: docSnap.id,
+                            ...docSnap.data()
+                        });
+                    });
+                    
+                    accounts = fetchedAccounts;
+                    
+                    // If user doesn't have any challenges setup yet, create default mock evaluation account
+                    if (accounts.length === 0) {
+                        createDefaultChallengeAccount(userId);
+                    } else {
+                        // Update selectors and active views
+                        populateAccountSelectors();
+                        if (!selectedAccount && accounts.length > 0) {
+                            selectedAccount = accounts[0];
+                        } else if (selectedAccount) {
+                            // Keep reference updated
+                            selectedAccount = accounts.find(a => a.id === selectedAccount.id) || accounts[0];
+                        }
+                        updateDashboardUI();
+                        // Mirror copy to offline store
+                        localStorage.setItem(`nexus_backup_${userId}`, JSON.stringify(accounts));
+                    }
+                }, (error) => {
+                    console.warn("Firestore index error/unreachable, falling back to LocalStorage:", error);
+                    enableLocalStorageFallback(userId);
+                });
+            } catch (err) {
+                console.warn("Failed setting up Firestore listener, fallback to local database:", err);
+                enableLocalStorageFallback(userId);
+            }
+        }
+
+        function enableLocalStorageFallback(userId) {
+            useLocalDatabaseFallback = true;
+            loadLocalBackupAccounts(userId);
+        }
+
+        function loadLocalBackupAccounts(userId) {
+            const localData = localStorage.getItem(`nexus_backup_${userId}`);
+            if (localData) {
+                try {
+                    accounts = JSON.parse(localData);
+                } catch (e) {
+                    accounts = [];
+                }
+            }
+            
+            if (accounts.length === 0) {
+                const defaultPkg = CHALLENGE_PACKAGES[2]; // Stellar 2-step $50k
+                const newAccId = 'ACC-' + Math.floor(100000 + Math.random() * 900000);
+                const mockOfflineAcc = {
+                    id: newAccId,
+                    type: `${defaultPkg.type}`,
+                    size: defaultPkg.size,
+                    balance: defaultPkg.size,
+                    equity: defaultPkg.size,
+                    dailyLoss: 0,
+                    maxLoss: 0,
+                    profitTarget: defaultPkg.target,
+                    dailyLimit: defaultPkg.dailyLimit,
+                    maxLimit: defaultPkg.maxLimit,
+                    status: 'Active',
+                    startDate: new Date().toISOString().split('T')[0],
+                    daysTraded: 0,
+                    minDaysRequired: 5,
+                    metrics: [
+                        { name: 'Day 0', balance: defaultPkg.size, equity: defaultPkg.size }
+                    ],
+                    trades: []
+                };
+                accounts = [mockOfflineAcc];
+                localStorage.setItem(`nexus_backup_${userId}`, JSON.stringify(accounts));
+            }
+            
+            populateAccountSelectors();
+            if (!selectedAccount) {
+                selectedAccount = accounts[0];
+            } else {
+                selectedAccount = accounts.find(a => a.id === selectedAccount.id) || accounts[0];
+            }
+            updateDashboardUI();
+        }
+
+        // Generate dynamic first challenge on firestore registration
+        async function createDefaultChallengeAccount(userId) {
+            const defaultPkg = CHALLENGE_PACKAGES[2]; // Stellar 2-step $50k
+            const newAccId = 'ACC-' + Math.floor(100000 + Math.random() * 900000);
+            
+            const newAccountDoc = {
+                id: newAccId,
+                type: `${defaultPkg.type}`,
+                size: defaultPkg.size,
+                balance: defaultPkg.size,
+                equity: defaultPkg.size,
+                dailyLoss: 0,
+                maxLoss: 0,
+                profitTarget: defaultPkg.target,
+                dailyLimit: defaultPkg.dailyLimit,
+                maxLimit: defaultPkg.maxLimit,
+                status: 'Active',
+                startDate: new Date().toISOString().split('T')[0],
+                daysTraded: 0,
+                minDaysRequired: 5,
+                metrics: [
+                    { name: 'Day 0', balance: defaultPkg.size, equity: defaultPkg.size }
+                ],
+                trades: []
+            };
+
+            if (useLocalDatabaseFallback) {
+                accounts = [newAccountDoc];
+                localStorage.setItem(`nexus_backup_${userId}`, JSON.stringify(accounts));
+                populateAccountSelectors();
+                selectedAccount = accounts[0];
+                updateDashboardUI();
+                return;
+            }
+
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'users', userId, 'accounts', newAccId);
+                await setDoc(docRef, newAccountDoc);
+                showToast("Akun Stellar 2-Step awal $50K berhasil disiapkan secara otomatis!", "success");
+            } catch (err) {
+                console.warn("Error setting default doc, fallback local:", err);
+                enableLocalStorageFallback(userId);
+            }
+        }
+
+        // Form submissions: Register
+        document.getElementById('form-register').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('register-name').value;
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                await updateProfile(userCredential.user, { displayName: name });
+                showToast("Registrasi Akun Sukses!", "success");
+                switchView('dashboard');
+            } catch (err) {
+                console.error(err);
+                if (err.code === 'auth/email-already-in-use') {
+                    showToast("Email tersebut sudah terdaftar! Silakan login melalui portal.", "warn");
+                } else {
+                    showToast(`Pendaftaran Gagal: ${err.message}`, "error");
+                }
+            }
+        });
+
+        // Form submissions: Login
+        document.getElementById('form-login').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                showToast("Login Berhasil! Mengalihkan ke Dashboard...", "success");
+                switchView('dashboard');
+            } catch (err) {
+                console.error(err);
+                showToast(`Gagal Masuk: Email atau password Anda salah.`, "error");
+            }
+        });
+
+        // Event Logout
+        const logoutHandler = async () => {
+            try {
+                await signOut(auth);
+                showToast("Berhasil keluar dari sesi.", "info");
+                switchView('landing');
+            } catch (err) {
+                console.error(err);
+                showToast("Gagal logout.", "error");
+            }
+        };
+        document.getElementById('btn-logout').addEventListener('click', logoutHandler);
+        document.getElementById('btn-logout-mobile').addEventListener('click', logoutHandler);
+
+        // Buy Package logic inside dashboard
+        window.purchaseChallenge = async function(pkgId) {
+            if (!currentUser) {
+                showToast("Silakan login atau buat akun terlebih dahulu untuk bertransaksi.", "warn");
+                switchView('auth-login');
+                return;
+            }
+
+            const pkg = CHALLENGE_PACKAGES.find(p => p.id === pkgId);
+            if (!pkg) return;
+
+            const newAccId = 'ACC-' + Math.floor(100000 + Math.random() * 900000);
+            const newAccountDoc = {
+                id: newAccId,
+                type: `${pkg.type}`,
+                size: pkg.size,
+                balance: pkg.size,
+                equity: pkg.size,
+                dailyLoss: 0,
+                maxLoss: 0,
+                profitTarget: pkg.target,
+                dailyLimit: pkg.dailyLimit,
+                maxLimit: pkg.maxLimit,
+                status: 'Active',
+                startDate: new Date().toISOString().split('T')[0],
+                daysTraded: 0,
+                minDaysRequired: 5,
+                metrics: [
+                    { name: 'Day 0', balance: pkg.size, equity: pkg.size }
+                ],
+                trades: []
+            };
+
+            if (useLocalDatabaseFallback) {
+                accounts = [newAccountDoc, ...accounts];
+                localStorage.setItem(`nexus_backup_${currentUser.uid}`, JSON.stringify(accounts));
+                selectedAccount = newAccountDoc;
+                populateAccountSelectors();
+                updateDashboardUI();
+                showToast(`Sukses mendaftar! Tantangan ${pkg.type} sebesar $${pkg.size.toLocaleString()} telah aktif (Offline).`, "success");
+                switchDashboardTab('overview');
+                return;
+            }
+
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'accounts', newAccId);
+                await setDoc(docRef, newAccountDoc);
+                selectedAccount = newAccountDoc;
+                showToast(`Sukses mendaftar! Tantangan ${pkg.type} sebesar $${pkg.size.toLocaleString()} telah aktif.`, "success");
+                switchDashboardTab('overview');
+            } catch (err) {
+                console.error(err);
+                showToast("Gagal memproses transaksi challenge.", "error");
+            }
+        }
+
+        // Simulation trade submissions
+        document.getElementById('form-simulation-trade').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!currentUser || !selectedAccount) {
+                showToast("Sesi akun tidak aktif atau terputus.", "error");
+                return;
+            }
+
+            if (selectedAccount.status !== 'Active') {
+                showToast("Akun sudah dibekukan atau lulus. Tidak dapat menerima posisi baru.", "warn");
+                return;
+            }
+
+            const profitInput = parseFloat(document.getElementById('sim-profit').value);
+            const pairVal = document.getElementById('sim-pair').value;
+            const lotsVal = parseFloat(document.getElementById('sim-lots').value) || 1.0;
+
+            if (isNaN(profitInput)) {
+                showToast("Isi nilai profit atau rugi angka secara benar.", "warn");
+                return;
+            }
+
+            const updatedAccount = { ...selectedAccount };
+            const newTradeId = 'T-' + Math.floor(100 + Math.random() * 900);
+            const newTrade = {
+                id: newTradeId,
+                pair: pairVal,
+                type: currentSimType,
+                lots: lotsVal,
+                profit: profitInput,
+                time: new Date().toISOString().replace('T', ' ').substring(0, 16)
+            };
+
+            updatedAccount.trades = [newTrade, ...(updatedAccount.trades || [])];
+            updatedAccount.balance += profitInput;
+            updatedAccount.equity = updatedAccount.balance; // Simplified mapping logic
+
+            if (profitInput < 0) {
+                const absoluteLoss = Math.abs(profitInput);
+                updatedAccount.dailyLoss += absoluteLoss;
+                updatedAccount.maxLoss += absoluteLoss;
+            }
+
+            // Check dynamic rules violations (Balance-Based drawdown style)
+            if (updatedAccount.dailyLoss >= updatedAccount.dailyLimit || updatedAccount.maxLoss >= updatedAccount.maxLimit) {
+                updatedAccount.status = 'Violated';
+                showToast("Pelanggaran Drawdown Terdeteksi! Status Akun Dihentikan.", "error");
+            } else if (updatedAccount.balance - updatedAccount.size >= updatedAccount.profitTarget) {
+                updatedAccount.status = 'Passed';
+                showToast("Luar Biasa! Anda Berhasil Lolos Target Keuntungan!", "success");
+            }
+
+            // Append performance points update
+            const coordIndex = updatedAccount.metrics.length;
+            updatedAccount.metrics.push({
+                name: `Trade ${coordIndex}`,
+                balance: updatedAccount.balance,
+                equity: updatedAccount.equity
+            });
+
+            // If some positions are processed, simulate active trading days
+            if (updatedAccount.trades.length % 2 === 0) {
+                updatedAccount.daysTraded += 1;
+            }
+
+            if (useLocalDatabaseFallback) {
+                const index = accounts.findIndex(a => a.id === updatedAccount.id);
+                if (index !== -1) accounts[index] = updatedAccount;
+                localStorage.setItem(`nexus_backup_${currentUser.uid}`, JSON.stringify(accounts));
+                selectedAccount = updatedAccount;
+                updateDashboardUI();
+                showToast("Posisi baru berhasil disimulasikan secara lokal.", "success");
+                document.getElementById('sim-profit').value = "150";
+                return;
+            }
+
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'accounts', updatedAccount.id);
+                await updateDoc(docRef, updatedAccount);
+                selectedAccount = updatedAccount;
+                showToast("Posisi baru berhasil dikirim dan dianalisis.", "success");
+                document.getElementById('sim-profit').value = "150";
+            } catch (err) {
+                console.error(err);
+                showToast("Gagal menyimpan riwayat trading ke database.", "error");
+            }
+        });
+
+        // Form Payout submissions handler
+        document.getElementById('form-payout-request').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const addr = document.getElementById('payout-address').value;
+            if (!addr) return;
+            
+            showToast("Memproses permintaan penarikan dana ke sistem pembayaran...", "info");
+            setTimeout(() => {
+                showToast("Sukses mengirimkan permohonan! Payout Anda dijamin cair dalam 24 jam.", "success");
+                document.getElementById('payout-address').value = '';
+            }, 1500);
+        });
+
+        // UI Action Handlers
+        window.switchChallengeModel = function(modelId) {
+            selectedModel = modelId;
+            
+            // Highlight active models tab
+            const models = ['stellar-2step', 'stellar-1step', 'evaluation', 'express'];
+            models.forEach(m => {
+                const btn = document.getElementById(`btn-model-${m}`);
+                if (btn) {
+                    if (m === modelId) {
+                        btn.className = "flex-1 min-w-[150px] text-center py-3 px-4 rounded-xl font-bold transition-all text-xs bg-blue-600 text-white shadow-md shadow-blue-500/10";
+                    } else {
+                        btn.className = "flex-1 min-w-[150px] text-center py-3 px-4 rounded-xl font-bold transition-all text-xs text-slate-400 hover:text-white";
+                    }
+                }
+            });
+
+            // Render buttons for sizes & update specs
+            selectedPackageIndex = 0;
+            renderAccountSizeSelectors();
+            updateLandingSpecs();
+        }
+
+        function renderAccountSizeSelectors() {
+            const container = document.getElementById('account-size-container');
+            if (!container) return;
+
+            const filtered = CHALLENGE_PACKAGES.filter(p => p.model === selectedModel);
+            container.innerHTML = filtered.map((pkg, index) => `
+                <button onclick="selectPackage(${index})" class="flex-1 min-w-[100px] text-center py-3 px-4 rounded-lg font-bold transition-all text-xs ${
+                    index === selectedPackageIndex 
+                        ? 'bg-slate-900 text-white border border-slate-800' 
+                        : 'text-slate-500 hover:text-white hover:bg-slate-900/50'
+                }">
+                    $${(pkg.size / 1000)}k Account
+                </button>
+            `).join('');
+        }
+
+        window.selectPackage = function(index) {
+            selectedPackageIndex = index;
+            renderAccountSizeSelectors();
+            updateLandingSpecs();
+        }
+
+        function updateLandingSpecs() {
+            const filtered = CHALLENGE_PACKAGES.filter(p => p.model === selectedModel);
+            const pkg = filtered[selectedPackageIndex] || filtered[0];
+            if (!pkg) return;
+
+            // Updates detailed rule cards
+            document.getElementById('spec-target-profit').innerText = pkg.model === 'stellar-1step' ? `$${pkg.target.toLocaleString()} (10%)` : `$${pkg.target.toLocaleString()}`;
+            document.getElementById('spec-daily-limit').innerText = `$${pkg.dailyLimit.toLocaleString()} (5% Balance-Based)`;
+            document.getElementById('spec-max-limit').innerText = `$${pkg.maxLimit.toLocaleString()} (10%)`;
+            document.getElementById('spec-time-limit').innerText = selectedModel.includes('stellar') ? "Tidak Ada Batas Waktu" : "Tidak Ada Batas Waktu";
+            document.getElementById('spec-leverage').innerText = pkg.model === 'stellar-1step' ? '1:30' : '1:100';
+
+            // Billing configuration
+            document.getElementById('card-label-type').innerText = pkg.type.toUpperCase();
+            document.getElementById('card-account-size').innerText = `$${pkg.size.toLocaleString()}`;
+            document.getElementById('card-package-fee').innerText = `$${pkg.fee}`;
+        }
+
+        window.handlePurchaseFromLanding = function() {
+            const filtered = CHALLENGE_PACKAGES.filter(p => p.model === selectedModel);
+            const pkg = filtered[selectedPackageIndex] || filtered[0];
+            if (currentUser) {
+                switchView('dashboard');
+                switchDashboardTab('shop');
+                showToast(`Silakan selesaikan pembayaran untuk paket $${pkg.size.toLocaleString()}`, 'info');
+            } else {
+                switchView('auth-register');
+                showToast("Daftar akun trader gratis terlebih dahulu untuk bertransaksi.", "info");
+            }
+        }
+
+        window.setSimType = function(type) {
+            currentSimType = type;
+            const btnBuy = document.getElementById('btn-sim-buy');
+            const btnSell = document.getElementById('btn-sim-sell');
+            if (type === 'BUY') {
+                btnBuy.className = "py-1 rounded font-bold text-xs text-center transition-all bg-emerald-600 text-white";
+                btnSell.className = "py-1 rounded font-bold text-xs text-center transition-all text-slate-400 hover:text-white";
+            } else {
+                btnBuy.className = "py-1 rounded font-bold text-xs text-center transition-all text-slate-400 hover:text-white";
+                btnSell.className = "py-1 rounded font-bold text-xs text-center transition-all bg-red-600 text-white";
+            }
+        }
+
+        window.handleAccountChange = function(accId) {
+            const acc = accounts.find(a => a.id === accId);
+            if (acc) {
+                selectedAccount = acc;
+                updateDashboardUI();
+                showToast(`Berhasil berganti ke portofolio ${acc.id}`, 'info');
+            }
+        }
+
+        // View switching logic (Single Page application)
+        window.switchView = function(viewId) {
+            // Close mobile menu if open
+            const mobMenu = document.getElementById('mobile-menu');
+            const iconOpen = document.getElementById('menu-icon-open');
+            const iconClose = document.getElementById('menu-icon-close');
+            mobMenu.classList.add('hidden');
+            iconOpen.classList.remove('hidden');
+            iconClose.classList.add('hidden');
+
+            document.querySelectorAll('.view-section').forEach(section => {
+                section.classList.add('hidden');
+            });
+            
+            const targetView = document.getElementById(`view-${viewId}`);
+            if (targetView) {
+                targetView.classList.remove('hidden');
+            }
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Dashboard sub-tabs controls
+        window.switchDashboardTab = function(tabId) {
+            document.querySelectorAll('.dashboard-tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+            });
+            
+            // Un-highlight all tabs
+            const tabsIds = ['overview', 'stats', 'journal', 'calendar', 'payout', 'shop'];
+            tabsIds.forEach(id => {
+                const btn = document.getElementById(`btn-tab-${id}`);
+                if (btn) {
+                    btn.className = "px-5 py-3.5 text-xs font-bold tracking-wider uppercase transition-all flex items-center gap-2 border-b-2 border-transparent text-slate-400 hover:text-white";
+                }
+            });
+
+            // Highlight target tab
+            const targetBtn = document.getElementById(`btn-tab-${tabId}`);
+            if (targetBtn) {
+                targetBtn.className = "px-5 py-3.5 text-xs font-bold tracking-wider uppercase transition-all flex items-center gap-2 border-b-2 border-blue-500 text-white bg-blue-500/5";
+            }
+
+            const targetTab = document.getElementById(`tab-${tabId}`);
+            if (targetTab) {
+                targetTab.classList.remove('hidden');
+            }
+
+            // Ensure chart redraw if overview tab is highlighted
+            if (tabId === 'overview') {
+                setTimeout(updatePerformanceChart, 50);
+            }
+        }
+
+        // Menu drawer control (mobile)
+        window.toggleMobileMenu = function() {
+            const menu = document.getElementById('mobile-menu');
+            const openIco = document.getElementById('menu-icon-open');
+            const closeIco = document.getElementById('menu-icon-close');
+            
+            if (menu.classList.contains('hidden')) {
+                menu.classList.remove('hidden');
+                openIco.classList.add('hidden');
+                closeIco.classList.remove('hidden');
+            } else {
+                menu.classList.add('hidden');
+                openIco.classList.remove('hidden');
+                closeIco.classList.add('hidden');
+            }
+        }
+
+        // Load dynamic select components
+        function populateAccountSelectors() {
+            const select = document.getElementById('dashboard-account-select');
+            if (!select) return;
+
+            select.innerHTML = accounts.map(acc => `
+                <option value="${acc.id}" ${selectedAccount && acc.id === selectedAccount.id ? 'selected' : ''}>
+                    ${acc.id} (${acc.type}) - $${acc.size.toLocaleString()}
+                </option>
+            `).join('');
+        }
+
+        // Calculate Detailed Statistics (Win Rate, Profit Factor, Sharpe etc)
+        function calculateStatistics() {
+            if (!selectedAccount) return;
+            const trades = selectedAccount.trades || [];
+            
+            const totalTrades = trades.length;
+            const winningTrades = trades.filter(t => t.profit > 0);
+            const losingTrades = trades.filter(t => t.profit < 0);
+            
+            // Win Rate calculation
+            const winRate = totalTrades > 0 ? ((winningTrades.length / totalTrades) * 100).toFixed(1) : "0";
+            document.getElementById('stat-win-rate').innerText = `${winRate}%`;
+
+            // Profit Factor calculation
+            let totalProfitSum = 0;
+            let totalLossSum = 0;
+            winningTrades.forEach(t => totalProfitSum += t.profit);
+            losingTrades.forEach(t => totalLossSum += Math.abs(t.profit));
+            
+            const profitFactor = totalLossSum > 0 ? (totalProfitSum / totalLossSum).toFixed(2) : totalProfitSum > 0 ? totalProfitSum.toFixed(2) : "0.00";
+            document.getElementById('stat-profit-factor').innerText = profitFactor;
+
+            // Avg Win / Avg Loss
+            const avgWin = winningTrades.length > 0 ? (totalProfitSum / winningTrades.length).toFixed(0) : "0";
+            const avgLoss = losingTrades.length > 0 ? (totalLossSum / losingTrades.length).toFixed(0) : "0";
+            
+            document.getElementById('stat-avg-win').innerText = `$${parseFloat(avgWin).toLocaleString()}`;
+            document.getElementById('stat-avg-loss').innerText = `$${parseFloat(avgLoss).toLocaleString()}`;
+
+            // Totals list stats
+            document.getElementById('stat-total-trades').innerText = totalTrades;
+            document.getElementById('stat-profitable-trades').innerText = winningTrades.length;
+            document.getElementById('stat-losing-trades').innerText = losingTrades.length;
+        }
+
+        // Main render loop for active Dashboard info
+        function updateDashboardUI() {
+            if (!selectedAccount) return;
+
+            // Balance Metrics
+            document.getElementById('metric-balance').innerText = `$${selectedAccount.balance.toLocaleString()}`;
+            document.getElementById('metric-initial-balance').innerText = `$${selectedAccount.size.toLocaleString()}`;
+            
+            // Equity Metrics
+            document.getElementById('metric-equity').innerText = `$${selectedAccount.equity.toLocaleString()}`;
+            const statusEl = document.getElementById('metric-account-status');
+            statusEl.innerText = selectedAccount.status;
+            
+            // Apply visual classes for status
+            if (selectedAccount.status === 'Active') {
+                statusEl.className = "px-2 py-0.5 rounded-full font-bold text-[10px] uppercase bg-emerald-950/40 text-emerald-400 border border-emerald-900";
+            } else if (selectedAccount.status === 'Passed') {
+                statusEl.className = "px-2 py-0.5 rounded-full font-bold text-[10px] uppercase bg-blue-950/40 text-blue-400 border border-blue-900";
+            } else {
+                statusEl.className = "px-2 py-0.5 rounded-full font-bold text-[10px] uppercase bg-red-950/40 text-red-400 border border-red-900";
+            }
+
+            // Gained profit calculation
+            const netProfit = selectedAccount.balance - selectedAccount.size;
+            const profitEl = document.getElementById('metric-profit-gained');
+            profitEl.innerText = `${netProfit >= 0 ? '+' : ''}$${netProfit.toLocaleString()}`;
+            profitEl.className = `text-3xl font-bold mt-1 block ${netProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`;
+            document.getElementById('metric-profit-target').innerText = `$${selectedAccount.profitTarget.toLocaleString()}`;
+
+            // Days active counter
+            document.getElementById('metric-days-traded').innerText = `${selectedAccount.daysTraded} Hari`;
+
+            // Drawdowns Progress Metrics
+            document.getElementById('objective-daily-max').innerText = `$${selectedAccount.dailyLimit.toLocaleString()}`;
+            document.getElementById('objective-daily-current').innerText = `$${selectedAccount.dailyLoss.toLocaleString()}`;
+            const dailyPercent = Math.min((selectedAccount.dailyLoss / selectedAccount.dailyLimit) * 100, 100);
+            const dailyBar = document.getElementById('bar-daily-loss');
+            dailyBar.style.width = `${dailyPercent}%`;
+            dailyBar.className = `h-full rounded-full ${dailyPercent >= 100 ? 'bg-red-500' : dailyPercent >= 70 ? 'bg-amber-500' : 'bg-emerald-500'}`;
+
+            document.getElementById('objective-max-loss-limit').innerText = `$${selectedAccount.maxLimit.toLocaleString()}`;
+            document.getElementById('objective-max-loss-current').innerText = `$${selectedAccount.maxLoss.toLocaleString()}`;
+            const overallLossPercent = Math.min((selectedAccount.maxLoss / selectedAccount.maxLimit) * 100, 100);
+            const overallBar = document.getElementById('bar-max-loss');
+            overallBar.style.width = `${overallLossPercent}%`;
+            overallBar.className = `h-full rounded-full ${overallLossPercent >= 100 ? 'bg-red-600' : 'bg-red-400'}`;
+
+            document.getElementById('objective-profit-target').innerText = `$${selectedAccount.profitTarget.toLocaleString()}`;
+            const progressProfit = Math.max(0, netProfit);
+            document.getElementById('objective-profit-current').innerText = `$${progressProfit.toLocaleString()}`;
+            const targetPercent = Math.min((progressProfit / selectedAccount.profitTarget) * 100, 100);
+            document.getElementById('bar-profit-target').style.width = `${targetPercent}%`;
+
+            // Evaluation block feedback card
+            const feedbackIconContainer = document.getElementById('evaluation-status-icon-container');
+            const feedbackDesc = document.getElementById('evaluation-status-desc');
+            const certBtn = document.getElementById('btn-certificate');
+            
+            if (selectedAccount.status === 'Active') {
+                feedbackIconContainer.className = "p-2 rounded-xl bg-emerald-500/10 text-emerald-400";
+                feedbackIconContainer.innerHTML = '<i data-lucide="check-circle" class="w-5 h-5"></i>';
+                feedbackDesc.innerText = "Seluruh parameter aman dari pelanggaran limit.";
+                certBtn.classList.add('hidden');
+            } else if (selectedAccount.status === 'Passed') {
+                feedbackIconContainer.className = "p-2 rounded-xl bg-blue-500/10 text-blue-400";
+                feedbackIconContainer.innerHTML = '<i data-lucide="award" class="w-5 h-5"></i>';
+                feedbackDesc.innerText = "Selamat! Target tercapai tanpa ada pelanggaran.";
+                certBtn.classList.remove('hidden');
+            } else {
+                feedbackIconContainer.className = "p-2 rounded-xl bg-red-500/10 text-red-400";
+                feedbackIconContainer.innerHTML = '<i data-lucide="x-circle" class="w-5 h-5"></i>';
+                feedbackDesc.innerText = "Akun ini terdeteksi melanggar batas harian / total drawdown.";
+                certBtn.classList.add('hidden');
+            }
+
+            // Payout Room setup
+            const availableProfit = Math.max(0, netProfit);
+            document.getElementById('payout-available-profit').innerText = `$${availableProfit.toLocaleString()}`;
+
+            // Calculate Detailed stats
+            calculateStatistics();
+
+            // Populate Trades list
+            populateTradesTables();
+            
+            // Redraw Graph curves
+            updatePerformanceChart();
+
+            // Refresh icons dynamically inside templates
+            lucide.createIcons();
+        }
+
+        // Render detailed list of simulated records
+        function populateTradesTables() {
+            const recentTbody = document.getElementById('dashboard-recent-trades-tbody');
+            const fullTbody = document.getElementById('dashboard-full-journal-tbody');
+            if (!recentTbody || !fullTbody) return;
+
+            const trades = selectedAccount.trades || [];
+            
+            if (trades.length === 0) {
+                const emptyRow = `<tr><td colSpan="6" class="text-center py-8 text-slate-500">Belum ada riwayat aktivitas perdagangan terekam pada akun ini.</td></tr>`;
+                recentTbody.innerHTML = emptyRow;
+                fullTbody.innerHTML = emptyRow;
+                return;
+            }
+
+            // Build rows
+            const rowsHtml = trades.map(t => `
+                <tr class="border-b border-slate-800/60 hover:bg-slate-900/20">
+                    <td class="py-4 font-mono-custom text-xs text-slate-400">${t.id}</td>
+                    <td class="py-4 text-xs">${t.time || '00:00:00'}</td>
+                    <td class="py-4 font-semibold text-white">${t.pair}</td>
+                    <td class="py-4">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold ${t.type === 'BUY' ? 'bg-emerald-950/50 text-emerald-400 border border-emerald-900' : 'bg-red-950/50 text-red-400 border border-red-900'}">${t.type}</span>
+                    </td>
+                    <td class="py-4 font-mono-custom text-xs">${t.lots.toFixed(2)}</td>
+                    <td class="py-4 text-right font-extrabold ${t.profit >= 0 ? 'text-emerald-400' : 'text-red-400'}">
+                        ${t.profit >= 0 ? '+' : ''}$${t.profit.toLocaleString()}
+                    </td>
+                </tr>
+            `).join('');
+
+            // Slice only first four rows for recent panel overview
+            recentTbody.innerHTML = trades.slice(0, 4).map(t => `
+                <tr class="border-b border-slate-800/60 hover:bg-slate-900/20">
+                    <td class="py-3 font-semibold text-white">${t.pair}</td>
+                    <td class="py-3">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold ${t.type === 'BUY' ? 'bg-emerald-950/50 text-emerald-400 border border-emerald-900' : 'bg-red-950/50 text-red-400 border border-red-900'}">${t.type}</span>
+                    </td>
+                    <td class="py-3 font-mono-custom text-xs">${t.lots.toFixed(2)}</td>
+                    <td class="py-3 text-right font-bold ${t.profit >= 0 ? 'text-emerald-400' : 'text-red-400'}">
+                        ${t.profit >= 0 ? '+' : ''}$${t.profit.toLocaleString()}
+                    </td>
+                </tr>
+            `).join('');
+
+            fullTbody.innerHTML = rowsHtml;
+        }
+
+        // Render graphics details
+        function updatePerformanceChart() {
+            const ctx = document.getElementById('performanceChart');
+            if (!ctx || !selectedAccount) return;
+
+            const chartDataPoints = selectedAccount.metrics || [];
+            const labels = chartDataPoints.map(pt => pt.name);
+            const balances = chartDataPoints.map(pt => pt.balance);
+            const equities = chartDataPoints.map(pt => pt.equity);
+
+            if (performanceChartInstance) {
+                performanceChartInstance.destroy();
+            }
+
+            // Create linear visual gradient matching elite theme
+            const chartCtx = ctx.getContext('2d');
+            const balanceGradient = chartCtx.createLinearGradient(0, 0, 0, 300);
+            balanceGradient.addColorStop(0, 'rgba(59, 130, 246, 0.25)');
+            balanceGradient.addColorStop(1, 'rgba(59, 130, 246, 0)');
+
+            performanceChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Account Balance',
+                            data: balances,
+                            borderColor: '#3b82f6',
+                            borderWidth: 2.5,
+                            fill: true,
+                            backgroundColor: balanceGradient,
+                            tension: 0.2,
+                            pointBackgroundColor: '#020617',
+                            pointBorderColor: '#3b82f6',
+                            pointHoverRadius: 6
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: '#020617',
+                            borderColor: '#1e293b',
+                            borderWidth: 1,
+                            titleColor: '#94a3b8',
+                            bodyColor: '#f1f5f9',
+                            callbacks: {
+                                label: function(context) {
+                                    return `Balance: $${context.parsed.y.toLocaleString()}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: '#0f172a',
+                                drawTicks: false
+                            },
+                            ticks: {
+                                color: '#64748b',
+                                font: {
+                                    size: 11
+                                }
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: '#0f172a'
+                            },
+                            ticks: {
+                                color: '#64748b',
+                                font: {
+                                    size: 11
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Load static elements when DOM elements are completely parsed
+        function populateLandingStorePackages() {
+            const grid = document.getElementById('shop-packages-grid');
+            if (!grid) return;
+
+            const stellarPackages = CHALLENGE_PACKAGES.filter(p => p.model === 'stellar-2step');
+
+            grid.innerHTML = stellarPackages.map(pkg => `
+                <div class="bg-slate-900/40 border border-slate-900 hover:border-slate-800 rounded-2xl p-6 flex flex-col justify-between transition-all">
+                    <div>
+                        <span class="text-xs text-blue-500 font-extrabold uppercase tracking-widest">${pkg.type}</span>
+                        <h4 class="text-3xl font-extrabold text-white mt-2">$${pkg.size.toLocaleString()}</h4>
+                        
+                        <div class="space-y-2 mt-6">
+                            <div class="flex justify-between text-xs text-slate-400">
+                                <span>Target Profit:</span>
+                                <span class="text-white font-semibold">$${pkg.target.toLocaleString()}</span>
+                            </div>
+                            <div class="flex justify-between text-xs text-slate-400">
+                                <span>Max Daily Drawdown:</span>
+                                <span class="text-white font-semibold">$${pkg.dailyLimit.toLocaleString()} (Balance-Based)</span>
+                            </div>
+                            <div class="flex justify-between text-xs text-slate-400">
+                                <span>Max Drawdown Limit:</span>
+                                <span class="text-white font-semibold">$${pkg.maxLimit.toLocaleString()}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-8 pt-6 border-t border-slate-800/60">
+                        <div class="flex justify-between items-center mb-4">
+                            <span class="text-xs text-slate-500">Registration Fee</span>
+                            <span class="text-xl font-bold text-white">$${pkg.fee} USD</span>
+                        </div>
+                        <button onclick="purchaseChallenge('${pkg.id}')" class="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-sm transition-all shadow-md">
+                            Daftar Akun Baru
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Navigation elements for smooth scroll
+        window.scrollToElement = function(id) {
+            switchView('landing');
+            setTimeout(() => {
+                const el = document.getElementById(id);
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }, 100);
+        }
+
+        window.scrollToElementMobile = function(id) {
+            toggleMobileMenu();
+            scrollToElement(id);
+        }
+
+        // Certificate dynamic popups logic
+        window.triggerCertificate = function() {
+            if (!currentUser) return;
+            const certName = document.getElementById('certificate-name');
+            certName.innerText = currentUser.displayName || "ELITE TRADER";
+            
+            const modal = document.getElementById('certificate-modal');
+            modal.classList.remove('hidden');
+        }
+
+        window.closeCertificate = function() {
+            const modal = document.getElementById('certificate-modal');
+            modal.classList.add('hidden');
+        }
+
+        // On window load sequence
+        window.addEventListener('load', () => {
+            switchChallengeModel('stellar-2step');
+            populateLandingStorePackages();
+            lucide.createIcons();
+            
+            // Autologin anonymously on fallback for testing directly if not logged in
+            setTimeout(() => {
+                if (!auth.currentUser) {
+                    signInAnonymously(auth).catch(err => console.warn("Anonymous registration restricted in setup.", err));
+                }
+            }, 500);
+        });
+    </script>
+</body>
+</html>
