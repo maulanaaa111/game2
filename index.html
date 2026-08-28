@@ -49,11 +49,18 @@
         </div>
       </div>
 
-      <!-- User Auth Section -->
-      <div class="flex items-center space-x-3">
+      <!-- User Auth & Tools Section -->
+      <div class="flex items-center space-x-2 sm:space-x-3">
+        <!-- Privacy Mode Toggle -->
         <button id="togglePrivacyBtn" onclick="togglePrivacyMode()" title="Sembunyikan/Tampilkan Nominal Uang" class="p-2 bg-slate-700/50 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg transition border border-slate-600/50 text-sm flex items-center gap-1.5">
           <i id="privacyIcon" class="fas fa-eye"></i>
           <span id="privacyLabel" class="hidden sm:inline text-xs font-medium">Nilai ($)</span>
+        </button>
+
+        <!-- Position Sizing Calc Button -->
+        <button onclick="openCalcModal()" title="Kalkulator Risk & Position Size" class="p-2 bg-indigo-950/80 hover:bg-indigo-900/80 text-indigo-300 border border-indigo-700/60 rounded-lg transition text-sm flex items-center gap-1.5">
+          <i class="fas fa-calculator"></i>
+          <span class="hidden sm:inline text-xs font-medium">Kalkulator Risk</span>
         </button>
 
         <div id="authStatusArea" class="flex items-center space-x-2">
@@ -81,8 +88,30 @@
         </button>
       </div>
 
-      <!-- Action Button -->
+      <!-- Action Buttons -->
       <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+        <!-- Export/Import Dropdown -->
+        <div class="relative inline-block text-left">
+          <button onclick="toggleDataMenu()" class="bg-slate-700/80 hover:bg-slate-700 text-slate-200 font-medium px-3 py-2.5 rounded-lg text-sm border border-slate-600/60 transition flex items-center gap-1.5">
+            <i class="fas fa-file-export"></i>
+            <span class="hidden sm:inline">Data</span>
+            <i class="fas fa-chevron-down text-[10px]"></i>
+          </button>
+          <div id="dataMenu" class="hidden absolute right-0 mt-2 w-44 bg-slate-800 border border-slate-700 rounded-xl shadow-xl z-30 py-1.5 text-xs">
+            <button onclick="exportToCSV()" class="w-full text-left px-3.5 py-2 text-slate-200 hover:bg-slate-700/60 flex items-center gap-2">
+              <i class="fas fa-file-csv text-emerald-400"></i> Ekspor ke CSV
+            </button>
+            <button onclick="exportToJSON()" class="w-full text-left px-3.5 py-2 text-slate-200 hover:bg-slate-700/60 flex items-center gap-2">
+              <i class="fas fa-file-code text-blue-400"></i> Backup JSON
+            </button>
+            <hr class="border-slate-700 my-1">
+            <label class="w-full text-left px-3.5 py-2 text-slate-200 hover:bg-slate-700/60 flex items-center gap-2 cursor-pointer">
+              <i class="fas fa-file-import text-amber-400"></i> Impor JSON
+              <input type="file" id="importJsonInput" accept=".json" onchange="importFromJSON(event)" class="hidden">
+            </label>
+          </div>
+        </div>
+
         <button onclick="openTradeModal()" class="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-semibold px-4 py-2.5 rounded-lg text-sm shadow-lg shadow-blue-600/25 transition active:scale-95 flex items-center justify-center gap-2">
           <i class="fas fa-plus-circle"></i> Catat Trade Baru
         </button>
@@ -131,8 +160,8 @@
     <section id="viewMyJournal" class="space-y-4">
       <!-- Filters -->
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-slate-800/40 p-3 rounded-lg border border-slate-700/40">
-        <div class="flex items-center gap-2 w-full sm:w-auto">
-          <span class="text-xs text-slate-400 font-medium">Filter Aset:</span>
+        <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          <span class="text-xs text-slate-400 font-medium">Filter:</span>
           <select id="filterAsset" onchange="renderTradesTable()" class="bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-lg px-2.5 py-1.5 focus:ring-blue-500 focus:border-blue-500">
             <option value="ALL">Semua Aset</option>
             <option value="Crypto">Crypto</option>
@@ -147,7 +176,7 @@
           </select>
         </div>
         <div class="text-xs text-slate-400 italic">
-          Data tersinkron otomatis ke cloud secara real-time.
+          Data tersinkron otomatis secara real-time.
         </div>
       </div>
 
@@ -228,8 +257,96 @@
           </div>
         </div>
       </div>
+
+      <!-- Advanced Analytics: Strategy & Emotion Performance -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Strategy Breakdown Chart -->
+        <div class="bg-slate-800 p-5 rounded-xl border border-slate-700/60">
+          <h3 class="text-sm font-bold text-slate-200 uppercase tracking-wider mb-4">
+            <i class="fas fa-chess-knight text-emerald-400 mr-2"></i> Performa Berdasarkan Strategi
+          </h3>
+          <div class="h-60 w-full">
+            <canvas id="strategyChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Emotion Impact Chart -->
+        <div class="bg-slate-800 p-5 rounded-xl border border-slate-700/60">
+          <h3 class="text-sm font-bold text-slate-200 uppercase tracking-wider mb-4">
+            <i class="fas fa-brain text-amber-400 mr-2"></i> Dampak Psikologi & Emosi
+          </h3>
+          <div class="h-60 w-full">
+            <canvas id="emotionChart"></canvas>
+          </div>
+        </div>
+      </div>
     </section>
 
+  </div>
+
+  <!-- POPUP MODAL: KALKULATOR RISK & POSITION SIZE -->
+  <div id="calcModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-800 border border-slate-700 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden p-6 space-y-4">
+      <div class="flex justify-between items-center border-b border-slate-700 pb-3">
+        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+          <i class="fas fa-calculator text-indigo-400"></i> Kalkulator Risk & Position Size
+        </h3>
+        <button onclick="closeCalcModal()" class="text-slate-400 hover:text-white text-lg">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Total Saldo Modal ($)</label>
+          <input type="number" id="calcModalBalance" value="1000" oninput="runPositionCalc()" class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-lg px-3 py-2">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Toleransi Risiko (%)</label>
+            <input type="number" step="0.1" id="calcModalRiskPct" value="1.0" oninput="runPositionCalc()" class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-lg px-3 py-2">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Harga Entry ($)</label>
+            <input type="number" step="any" id="calcModalEntry" value="100" oninput="runPositionCalc()" class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-lg px-3 py-2">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Harga Stop Loss ($)</label>
+            <input type="number" step="any" id="calcModalSL" value="95" oninput="runPositionCalc()" class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-lg px-3 py-2">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Leverage (opsional)</label>
+            <input type="number" id="calcModalLev" value="10" oninput="runPositionCalc()" class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-lg px-3 py-2">
+          </div>
+        </div>
+
+        <!-- Result Box -->
+        <div class="bg-indigo-950/50 border border-indigo-800/60 p-4 rounded-xl space-y-2 mt-2">
+          <div class="flex justify-between text-xs">
+            <span class="text-slate-400">Maksimal Resiko ($):</span>
+            <span id="resRiskVal" class="font-bold text-rose-400">$10.00</span>
+          </div>
+          <div class="flex justify-between text-xs">
+            <span class="text-slate-400">Total Ukuran Posisi ($):</span>
+            <span id="resPosSizeVal" class="font-bold text-indigo-300">$200.00</span>
+          </div>
+          <div class="flex justify-between text-xs">
+            <span class="text-slate-400">Rekomendasi Margin Diperlukan ($):</span>
+            <span id="resMarginVal" class="font-bold text-emerald-400">$20.00</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-end pt-2">
+        <button onclick="closeCalcModal()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-xs font-semibold transition">
+          Tutup
+        </button>
+      </div>
+    </div>
   </div>
 
   <!-- POPUP MODAL: TAMBAH / EDIT TRADE -->
@@ -324,7 +441,7 @@
               <option value="Disiplin">😌 Disiplin (Sesuai Plan)</option>
               <option value="FOMO">😰 FOMO (Takut Ketinggalan)</option>
               <option value="Greedy">🤑 Greedy (Terlalu Serakah)</option>
-              <option value="Revenge">Renege Trading (Balas Dendam)</option>
+              <option value="Revenge">😡 Revenge Trading (Balas Dendam)</option>
               <option value="Cemas">😬 Ragu-ragu / Cemas</option>
             </select>
           </div>
@@ -441,7 +558,6 @@
       collection, 
       doc, 
       setDoc, 
-      addDoc, 
       deleteDoc, 
       onSnapshot 
     } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -466,7 +582,7 @@
       auth = getAuth(app);
       db = getFirestore(app);
     } catch(e) {
-      console.warn("Firebase config is using fallback mode.", e);
+      console.warn("Firebase config fallback mode.", e);
     }
 
     // State Management
@@ -476,6 +592,8 @@
     window.privacyHideNominal = false;
     window.equityChartInstance = null;
     window.winLossChartInstance = null;
+    window.strategyChartInstance = null;
+    window.emotionChartInstance = null;
     let isLocalStorageFallback = false;
 
     // Render Auth Status Button & Avatar
@@ -502,7 +620,7 @@
       }
     }
 
-    // Sample Default Trades for Local/Demo Mode
+    // Sample Default Trades
     const SAMPLE_TRADES = [
       {
         id: "demo_1",
@@ -630,7 +748,6 @@
           }
         }
       } catch (err) {
-        console.warn("Auth init warning:", err.message);
         enableDemoUserSession("Trader Guest");
       }
 
@@ -658,7 +775,6 @@
       loadLocalStorageTrades();
     }
 
-    // Google Login Action
     window.handleGoogleLogin = async function() {
       if (!auth) {
         showToast("Layanan autentikasi Cloud tidak aktif. Menggunakan Mode Demo.", "info");
@@ -670,12 +786,11 @@
         await signInWithPopup(auth, provider);
         showToast("Berhasil login dengan Google!", "success");
       } catch (error) {
-        console.warn("Google Auth error:", error);
         if (error.code === 'auth/unauthorized-domain') {
           showToast("Domain belum terdaftar di Firebase Console.", "error");
           openDomainModal();
         } else {
-          showToast("Gagal Google Login (" + error.code + "). Beralih ke Mode Demo.", "info");
+          showToast("Gagal Google Login. Beralih ke Mode Demo.", "info");
         }
         enableDemoUserSession("Trader Demo");
       }
@@ -695,7 +810,6 @@
       enableDemoUserSession("Trader Guest");
     };
 
-    // Firestore Realtime Subscriptions with Local Fallback
     function subscribeUserTrades(userId) {
       if (!db || !userId) {
         loadLocalStorageTrades();
@@ -715,16 +829,13 @@
         if (typeof renderTradesTable === 'function') renderTradesTable();
         if (typeof updateCharts === 'function') updateCharts();
       }, (error) => {
-        console.warn("Firestore permissions/offline restriction. Switching to Local Storage mode:", error.message);
         isLocalStorageFallback = true;
         loadLocalStorageTrades();
       });
     }
 
     function subscribePublicTrades() {
-      if (!db) {
-        return;
-      }
+      if (!db) return;
       const publicColRef = collection(db, 'artifacts', appId, 'public', 'data', 'trades');
       
       onSnapshot(publicColRef, (snapshot) => {
@@ -735,13 +846,11 @@
         trades.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
         window.publicTrades = trades;
         if (typeof renderPublicFeed === 'function') renderPublicFeed();
-      }, (error) => {
-        console.warn("Firestore public feed snapshot restriction. Using local public trades.");
+      }, () => {
         isLocalStorageFallback = true;
       });
     }
 
-    // Save or Update Trade
     window.saveTradeToFirestore = async function(tradeData) {
       if (!window.currentUser) {
         showToast("Harap login terlebih dahulu.", "error");
@@ -755,7 +864,6 @@
       tradeData.userPhoto = window.currentUser.photoURL || "";
       tradeData.createdAt = tradeData.createdAt || new Date().toISOString();
 
-      // Always persist to local storage for immediate responsiveness
       saveToLocalStorage(tradeData);
 
       if (db && !isLocalStorageFallback && !window.currentUser.isDemo) {
@@ -772,7 +880,6 @@
 
           showToast("Jurnal trade berhasil tersinkron ke Cloud!", "success");
         } catch (err) {
-          console.warn("Cloud sync error, saved locally:", err.message);
           showToast("Jurnal tersimpan secara lokal di browser!", "success");
         }
       } else {
@@ -781,7 +888,6 @@
       closeTradeModal();
     };
 
-    // Delete Trade
     window.deleteTrade = async function(docId, isPublic) {
       if (!confirm("Apakah Anda yakin ingin menghapus catatan trade ini?")) return;
 
@@ -801,14 +907,13 @@
       showToast("Catatan trade dihapus.", "info");
     };
 
-    // Initialize on load
     window.addEventListener('DOMContentLoaded', () => {
       window.initAuthentication();
       if (typeof onAssetClassChange === 'function') onAssetClassChange();
     });
   </script>
 
-  <!-- UI Logic & Helper Scripts -->
+  <!-- UI Logic & Feature Scripts -->
   <script>
     // Tab Switching
     function switchTab(tabName) {
@@ -834,7 +939,6 @@
       return str.charAt(0).toUpperCase() + str.slice(1);
     }
 
-    // Toggle Privacy Mode
     function togglePrivacyMode() {
       window.privacyHideNominal = !window.privacyHideNominal;
       const icon = document.getElementById('privacyIcon');
@@ -849,6 +953,127 @@
       updateMetrics();
       renderTradesTable();
       renderPublicFeed();
+    }
+
+    // Position Size Calculator
+    function openCalcModal() {
+      document.getElementById('calcModal').classList.remove('hidden');
+      runPositionCalc();
+    }
+    function closeCalcModal() {
+      document.getElementById('calcModal').classList.add('hidden');
+    }
+    function runPositionCalc() {
+      const balance = parseFloat(document.getElementById('calcModalBalance').value) || 0;
+      const riskPct = parseFloat(document.getElementById('calcModalRiskPct').value) || 0;
+      const entry = parseFloat(document.getElementById('calcModalEntry').value) || 0;
+      const sl = parseFloat(document.getElementById('calcModalSL').value) || 0;
+      const lev = parseFloat(document.getElementById('calcModalLev').value) || 1;
+
+      const maxRiskVal = (balance * riskPct) / 100;
+      const distPct = Math.abs(entry - sl) / entry;
+
+      let posSizeVal = 0;
+      if (distPct > 0) {
+        posSizeVal = maxRiskVal / distPct;
+      }
+      const marginVal = posSizeVal / lev;
+
+      document.getElementById('resRiskVal').innerText = "$" + maxRiskVal.toFixed(2);
+      document.getElementById('resPosSizeVal').innerText = "$" + posSizeVal.toFixed(2);
+      document.getElementById('resMarginVal').innerText = "$" + marginVal.toFixed(2);
+    }
+
+    // Export / Import Features
+    function toggleDataMenu() {
+      document.getElementById('dataMenu').classList.toggle('hidden');
+    }
+
+    window.addEventListener('click', function(e) {
+      const menu = document.getElementById('dataMenu');
+      if (menu && !menu.contains(e.target) && !e.target.closest('button[onclick="toggleDataMenu()"]')) {
+        menu.classList.add('hidden');
+      }
+    });
+
+    function exportToCSV() {
+      const trades = window.userTrades || [];
+      if (trades.length === 0) {
+        showToast("Tidak ada data trade untuk diekspor.", "info");
+        return;
+      }
+
+      const headers = ["ID", "Tanggal", "Aset", "Simbol", "Tipe", "Harga Entry", "Harga Exit", "Margin ($)", "PnL (%)", "PnL ($)", "Strategi", "Emosi", "Catatan"];
+      const csvRows = [headers.join(",")];
+
+      trades.forEach(t => {
+        const row = [
+          `"${t.id || ''}"`,
+          `"${t.dateStr || ''}"`,
+          `"${t.assetClass || ''}"`,
+          `"${t.symbol || ''}"`,
+          `"${t.side || ''}"`,
+          t.entryPrice || 0,
+          t.exitPrice || 0,
+          t.margin || 0,
+          t.pnlPct || 0,
+          t.pnlVal || 0,
+          `"${(t.strategy || '').replace(/"/g, '""')}"`,
+          `"${(t.emotion || '').replace(/"/g, '""')}"`,
+          `"${(t.notes || '').replace(/"/g, '""')}"`
+        ];
+        csvRows.push(row.join(","));
+      });
+
+      const csvString = csvRows.join("\n");
+      const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `TradeJournal_Backup_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast("Data trade berhasil diekspor ke CSV!", "success");
+    }
+
+    function exportToJSON() {
+      const trades = window.userTrades || [];
+      const jsonStr = JSON.stringify(trades, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `TradeJournal_Backup_${new Date().toISOString().slice(0,10)}.json`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast("Data trade berhasil diekspor ke JSON!", "success");
+    }
+
+    function importFromJSON(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const importedTrades = JSON.parse(e.target.result);
+          if (Array.isArray(importedTrades)) {
+            window.userTrades = importedTrades;
+            localStorage.setItem('tj_user_trades', JSON.stringify(window.userTrades));
+            updateMetrics();
+            renderTradesTable();
+            updateCharts();
+            showToast(`Berhasil mengimpor ${importedTrades.length} catatan trade!`, "success");
+          } else {
+            showToast("Format file JSON tidak valid.", "error");
+          }
+        } catch (err) {
+          showToast("Gagal membaca file JSON.", "error");
+        }
+      };
+      reader.readAsText(file);
     }
 
     // Dynamic Form Fields based on Asset Class
@@ -925,7 +1150,6 @@
       }
     }
 
-    // Auto Calculate PnL Preview
     function calculateAutoPnL() {
       const entry = parseFloat(document.getElementById('formEntryPrice').value) || 0;
       const exit = parseFloat(document.getElementById('formExitPrice').value) || 0;
@@ -942,9 +1166,7 @@
       }
 
       let diffPct = ((exit - entry) / entry) * 100;
-      if (side === 'SHORT') {
-        diffPct = -diffPct;
-      }
+      if (side === 'SHORT') diffPct = -diffPct;
       
       const totalPct = diffPct * leverage;
       const pnlVal = (margin * totalPct) / 100;
@@ -974,7 +1196,6 @@
       }
     }
 
-    // Modal Control
     function openTradeModal(editData = null) {
       document.getElementById('tradeForm').reset();
       document.getElementById('tradeId').value = "";
@@ -1007,7 +1228,6 @@
       document.getElementById('tradeModal').classList.add('hidden');
     }
 
-    // Handle Form Submit
     function handleSaveTrade(e) {
       e.preventDefault();
       
@@ -1033,7 +1253,7 @@
         margin: margin,
         pnlPct: pnlPct,
         pnlVal: pnlVal,
-        strategy: document.getElementById('formStrategy').value.trim(),
+        strategy: document.getElementById('formStrategy').value.trim() || 'General',
         emotion: document.getElementById('formEmotion').value,
         notes: document.getElementById('formNotes').value.trim(),
         chartUrl: document.getElementById('formChartUrl').value.trim(),
@@ -1046,7 +1266,6 @@
       }
     }
 
-    // Update Overview Cards
     function updateMetrics() {
       const trades = window.userTrades || [];
       if (trades.length === 0) {
@@ -1105,7 +1324,6 @@
       document.getElementById('metricTotalTrades').innerText = trades.length;
     }
 
-    // Render User Trades Table
     function renderTradesTable() {
       const tbody = document.getElementById('tradesTableBody');
       const filterAsset = document.getElementById('filterAsset').value;
@@ -1183,7 +1401,6 @@
       }).join('');
     }
 
-    // Render Public Feed
     function renderPublicFeed() {
       const container = document.getElementById('publicFeedGrid');
       const trades = window.publicTrades || [];
@@ -1250,7 +1467,6 @@
       }).join('');
     }
 
-    // Modal Details
     function openDetailModal(t) {
       document.getElementById('detailSymbol').innerText = t.symbol;
       document.getElementById('detailSubtitle').innerText = `${t.assetClass} • ${t.side} Position (${t.dateStr || ''})`;
@@ -1314,7 +1530,7 @@
       showToast('Domain disalin: ' + domain, 'success');
     }
 
-    // Render Chart.js Analytics
+    // Chart.js Analytics Engine
     function updateCharts() {
       const trades = window.userTrades || [];
       const wins = trades.filter(t => (t.pnlPct || 0) > 0).length;
@@ -1323,7 +1539,7 @@
       document.getElementById('chartWinCount').innerText = wins;
       document.getElementById('chartLossCount').innerText = losses;
 
-      // 1. Equity Curve Chart
+      // 1. Equity Curve
       const equityCtx = document.getElementById('equityChart')?.getContext('2d');
       if (equityCtx) {
         if (window.equityChartInstance) window.equityChartInstance.destroy();
@@ -1332,7 +1548,6 @@
         const labels = ['Start'];
         const dataPoints = [0];
 
-        // Process chronological order (oldest first)
         const sortedAsc = [...trades].reverse();
         sortedAsc.forEach((t, idx) => {
           cumulativePnL += (t.pnlPct || 0);
@@ -1358,9 +1573,7 @@
           options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: {
-              legend: { display: false }
-            },
+            plugins: { legend: { display: false } },
             scales: {
               x: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#94a3b8' } },
               y: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#94a3b8' } }
@@ -1369,7 +1582,7 @@
         });
       }
 
-      // 2. Win/Loss Pie Chart
+      // 2. Win/Loss Doughnut
       const winLossCtx = document.getElementById('winLossChart')?.getContext('2d');
       if (winLossCtx) {
         if (window.winLossChartInstance) window.winLossChartInstance.destroy();
@@ -1387,8 +1600,80 @@
           options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: {
-              legend: { position: 'bottom', labels: { color: '#94a3b8' } }
+            plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8' } } }
+          }
+        });
+      }
+
+      // 3. Strategy Chart (Bar)
+      const stratCtx = document.getElementById('strategyChart')?.getContext('2d');
+      if (stratCtx) {
+        if (window.strategyChartInstance) window.strategyChartInstance.destroy();
+
+        const stratMap = {};
+        trades.forEach(t => {
+          const s = t.strategy || 'General';
+          stratMap[s] = (stratMap[s] || 0) + (t.pnlPct || 0);
+        });
+
+        const stratLabels = Object.keys(stratMap);
+        const stratValues = Object.values(stratMap);
+
+        window.strategyChartInstance = new Chart(stratCtx, {
+          type: 'bar',
+          data: {
+            labels: stratLabels.length ? stratLabels : ['Belum Ada'],
+            datasets: [{
+              label: 'Total PnL (%)',
+              data: stratValues.length ? stratValues : [0],
+              backgroundColor: stratValues.map(v => v >= 0 ? 'rgba(16, 185, 129, 0.8)' : 'rgba(239, 68, 68, 0.8)'),
+              borderRadius: 6
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#94a3b8' } },
+              y: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#94a3b8' } }
+            }
+          }
+        });
+      }
+
+      // 4. Emotion Chart (Bar)
+      const emotionCtx = document.getElementById('emotionChart')?.getContext('2d');
+      if (emotionCtx) {
+        if (window.emotionChartInstance) window.emotionChartInstance.destroy();
+
+        const emotionMap = {};
+        trades.forEach(t => {
+          const e = t.emotion || 'Disiplin';
+          emotionMap[e] = (emotionMap[e] || 0) + (t.pnlPct || 0);
+        });
+
+        const emoLabels = Object.keys(emotionMap);
+        const emoValues = Object.values(emotionMap);
+
+        window.emotionChartInstance = new Chart(emotionCtx, {
+          type: 'bar',
+          data: {
+            labels: emoLabels.length ? emoLabels : ['Disiplin'],
+            datasets: [{
+              label: 'PnL berdasarkan Emosi (%)',
+              data: emoValues.length ? emoValues : [0],
+              backgroundColor: emoValues.map(v => v >= 0 ? 'rgba(59, 130, 246, 0.8)' : 'rgba(245, 158, 11, 0.8)'),
+              borderRadius: 6
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#94a3b8' } },
+              y: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#94a3b8' } }
             }
           }
         });
