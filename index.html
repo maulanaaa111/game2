@@ -620,9 +620,18 @@
 
         // Firebase Config setup
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'tradelog-pro-app';
+        const userFirebaseConfig = {
+            apiKey: "AIzaSyDEoK-n0F08vJs9q22u8vQ86ZYPJxTQrok",
+            authDomain: "jurnal-9546c.firebaseapp.com",
+            projectId: "jurnal-9546c",
+            storageBucket: "jurnal-9546c.firebasestorage.app",
+            messagingSenderId: "150221842718",
+            appId: "1:150221842718:web:3fbd9a37b3038e7152010f",
+            measurementId: "G-TT9D1JVS3W"
+        };
         const firebaseConfig = typeof __firebase_config !== 'undefined' 
             ? JSON.parse(__firebase_config) 
-            : { apiKey: "demo-key", authDomain: "demo.firebaseapp.com", projectId: "demo-project" };
+            : userFirebaseConfig;
 
         let auth, db;
         let currentUser = null;
