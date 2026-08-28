@@ -187,9 +187,10 @@
             <thead class="bg-slate-900/80 text-slate-400 uppercase text-[11px] tracking-wider border-b border-slate-700/80">
               <tr>
                 <th class="px-4 py-3.5">Tanggal</th>
-                <th class="px-4 py-3.5">Aset & Pasangan</th>
-                <th class="px-4 py-3.5">Tipe</th>
-                <th class="px-4 py-3.5">Entry -> Exit</th>
+                <th class="px-4 py-3.5">Pair</th>
+                <th class="px-4 py-3.5">Posisi</th>
+                <th class="px-4 py-3.5">Lot</th>
+                <th class="px-4 py-3.5">Entry &rarr; Exit</th>
                 <th class="px-4 py-3.5">Strategi</th>
                 <th class="px-4 py-3.5">PnL (%)</th>
                 <th class="px-4 py-3.5">PnL ($)</th>
@@ -199,7 +200,7 @@
             <tbody id="tradesTableBody" class="divide-y divide-slate-700/40">
               <!-- Rendered via JavaScript -->
               <tr>
-                <td colspan="8" class="text-center py-10 text-slate-500">
+                <td colspan="9" class="text-center py-10 text-slate-500">
                   <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
                   <p>Memuat data trade...</p>
                 </td>
@@ -356,39 +357,29 @@
       <form id="tradeForm" onsubmit="handleSaveTrade(event)" class="p-6 space-y-4">
         <input type="hidden" id="tradeId">
 
-        <!-- Asset Category & Position Type -->
+        <!-- 1. Pair, 2. Buy/Sell, 3. Lot -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Kelas Aset *</label>
-            <select id="formAssetClass" onchange="onAssetClassChange()" class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
-              <option value="Crypto">Kripto (Crypto)</option>
-              <option value="Forex">Forex</option>
-              <option value="Saham">Saham (Stocks)</option>
-              <option value="Futures">Futures / Indeks</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Simbol / Pair Aset *</label>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Pair *</label>
             <input type="text" id="formSymbol" required placeholder="misal: BTC/USDT, EUR/USD, BBCA" class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Arah Posisi *</label>
-            <select id="formSide" class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
-              <option value="LONG">LONG / BUY</option>
-              <option value="SHORT">SHORT / SELL</option>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Buy / Sell *</label>
+            <select id="formSide" onchange="calculateAutoPnL()" class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
+              <option value="BUY">BUY / LONG</option>
+              <option value="SELL">SELL / SHORT</option>
             </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Lot *</label>
+            <input type="number" step="any" id="formLot" required oninput="calculateAutoPnL()" placeholder="0.10" class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
           </div>
         </div>
 
-        <!-- Dynamic Fields Container -->
-        <div id="dynamicFieldsContainer" class="p-3.5 bg-slate-900/50 rounded-xl border border-slate-700/50 grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <!-- Dynamically filled based on asset class -->
-        </div>
-
-        <!-- Prices & Capital -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <!-- 4. Entry, 5. Exit, 6. TP, 7. SL -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div>
             <label class="block text-xs font-semibold text-slate-300 mb-1.5">Harga Entry *</label>
             <input type="number" step="any" id="formEntryPrice" required oninput="calculateAutoPnL()" placeholder="0.00" class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
@@ -398,41 +389,46 @@
             <input type="number" step="any" id="formExitPrice" required oninput="calculateAutoPnL()" placeholder="0.00" class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Modal / Margin ($) *</label>
-            <input type="number" step="any" id="formMargin" required oninput="calculateAutoPnL()" placeholder="100" class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Take Profit (TP)</label>
+            <input type="number" step="any" id="formTP" placeholder="0.00" class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Stop Loss (SL)</label>
+            <input type="number" step="any" id="formSL" placeholder="0.00" class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
           </div>
         </div>
 
-        <!-- Auto Calculated Preview -->
-        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-slate-900/80 p-3 rounded-lg border border-slate-700/60">
+        <!-- 8. Estimasi PnL (%), 9. Estimasi PnL ($), 10. Status Trade -->
+        <div class="grid grid-cols-3 gap-3 bg-slate-900/80 p-3.5 rounded-xl border border-slate-700/60">
           <div>
-            <span class="block text-[11px] text-slate-400">Estimasi PnL (%)</span>
+            <span class="block text-[11px] text-slate-400 font-medium">Estimasi PnL (%)</span>
             <span id="calcPnLPct" class="text-sm font-bold text-slate-300">0.00%</span>
           </div>
           <div>
-            <span class="block text-[11px] text-slate-400">Estimasi PnL ($)</span>
+            <span class="block text-[11px] text-slate-400 font-medium">Estimasi PnL ($)</span>
             <span id="calcPnLVal" class="text-sm font-bold text-slate-300">$0.00</span>
           </div>
-          <div class="col-span-2 sm:col-span-1">
-            <span class="block text-[11px] text-slate-400">Status Trade</span>
+          <div>
+            <span class="block text-[11px] text-slate-400 font-medium">Status Trade</span>
             <span id="calcStatus" class="text-sm font-bold text-slate-300">-</span>
           </div>
         </div>
 
-        <!-- Strategy -->
+        <!-- 11. Strategy -->
         <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Tag Strategi / Setup</label>
-          <input type="text" id="formStrategy" placeholder="misal: Breakout Retest, SMC FVG, Trend Following" class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Strategy / Setup</label>
+          <input type="text" id="formStrategy" placeholder="misal: Breakout Retest, SMC FVG, Swing Trade" class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
         </div>
 
-        <!-- Notes & Screenshot Link -->
+        <!-- 12. Catatan -->
         <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Catatan & Analisa (Reason for Entry)</label>
-          <textarea id="formNotes" rows="2" placeholder="Tuliskan alasan entry, konfirmasi indikator, atau pelajaran dari trade ini..." class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"></textarea>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Catatan & Analisa</label>
+          <textarea id="formNotes" rows="2" placeholder="Tuliskan alasan entry, konfirmasi indikator, atau evaluasi trade..." class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"></textarea>
         </div>
 
+        <!-- 13. Screenshot -->
         <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1.5">URL Screenshot Chart (TradingView / Lightshot)</label>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Screenshot Chart (URL)</label>
           <input type="url" id="formChartUrl" placeholder="https://www.tradingview.com/x/..." class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
         </div>
 
@@ -601,7 +597,10 @@
     const SAMPLE_TRADES = [
       {
         id: "demo_1",
-        assetClass: "Crypto",
+    // Sample Default Trades (Cleaned from assetClass and margin)
+    const SAMPLE_TRADES = [
+      {
+        id: "demo_1",
         symbol: "BTC/USDT",
         side: "BUY",
         lot: 0.1,
@@ -609,7 +608,6 @@
         exitPrice: 66800,
         tp: 67000,
         sl: 61000,
-        margin: 500,
         pnlPct: 6.88,
         pnlVal: 430.00,
         strategy: "Breakout Retest",
@@ -623,7 +621,6 @@
       },
       {
         id: "demo_2",
-        assetClass: "Forex",
         symbol: "EUR/USD",
         side: "SELL",
         lot: 1.0,
@@ -631,7 +628,6 @@
         exitPrice: 1.0890,
         tp: 1.0780,
         sl: 1.0880,
-        margin: 300,
         pnlPct: -0.37,
         pnlVal: -400.00,
         strategy: "SMC FVG",
@@ -890,7 +886,6 @@
 
     window.addEventListener('DOMContentLoaded', () => {
       window.initAuthentication();
-      if (typeof onAssetClassChange === 'function') onAssetClassChange();
     });
   </script>
 
@@ -1072,67 +1067,67 @@
         pnlPct: pnlPct,
         pnlVal: pnlVal,
         strategy: document.getElementById('formStrategy').value.trim() || 'General',
-        notes: document.getElementById('formNotes').value.trim(),
-        chartUrl: document.getElementById('formChartUrl').value.trim(),
-        isPublic: document.getElementById('formIsPublic').checked,
-        dateStr: new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
-      };
+    function renderTradesTable() {
+      const tbody = document.getElementById('tradesTableBody');
+      if (!tbody) return;
 
-      if (window.saveTradeToFirestore) {
-        window.saveTradeToFirestore(tradeData);
-      }
-    }
+      const trades = window.userTrades || [];
+      const filterOutcome = document.getElementById('filterOutcome')?.value || 'ALL';
 
-    function renderPublicFeed() {
-      const grid = document.getElementById('publicFeedGrid');
-      if (!grid) return;
+      const filtered = trades.filter(t => {
+        const isWin = (t.pnlPct || 0) > 0;
+        const isLoss = (t.pnlPct || 0) < 0;
+        if (filterOutcome === 'WIN' && !isWin) return false;
+        if (filterOutcome === 'LOSS' && !isLoss) return false;
+        return true;
+      });
 
-      const trades = window.publicTrades || [];
-      if (trades.length === 0) {
-        grid.innerHTML = `
-          <div class="col-span-full text-center py-10 text-slate-500 bg-slate-800/40 rounded-xl border border-slate-700/40">
-            <i class="fas fa-users-slash text-3xl mb-2 block"></i>
-            <p class="text-sm">Belum ada trade publik dari komunitas.</p>
-          </div>
+      if (filtered.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="9" class="text-center py-10 text-slate-500">
+              <i class="fas fa-folder-open text-3xl mb-2 block"></i>
+              <p class="text-xs sm:text-sm">Belum ada data trade terdaftar.</p>
+            </td>
+          </tr>
         `;
         return;
       }
 
-      grid.innerHTML = trades.map(t => {
+      tbody.innerHTML = filtered.map(t => {
         const isWin = (t.pnlPct || 0) >= 0;
-        const sideColor = t.side === 'BUY' || t.side === 'LONG' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-rose-500/10 text-rose-400 border-rose-500/30';
+        const pnlColor = isWin ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold';
+        const sideColor = (t.side === 'BUY' || t.side === 'LONG') ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-rose-500/10 text-rose-400 border-rose-500/30';
         const displayVal = window.privacyHideNominal ? '***' : ((t.pnlVal >= 0 ? '+$' : '-$') + Math.abs(t.pnlVal || 0).toFixed(2));
 
         return `
-          <div class="bg-slate-800 border border-slate-700/70 rounded-xl p-4 space-y-3 shadow-md">
-            <div class="flex items-center justify-between border-b border-slate-700/50 pb-2.5">
-              <div class="flex items-center gap-2">
-                <img src="${t.userPhoto || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + t.symbol}" class="w-7 h-7 rounded-full border border-blue-500/50" alt="Avatar">
-                <div>
-                  <h4 class="text-xs font-bold text-slate-200">${t.userDisplayName || 'Trader Anonim'}</h4>
-                  <span class="text-[10px] text-slate-400 font-mono">${t.dateStr || ''}</span>
-                </div>
+          <tr class="hover:bg-slate-700/30 transition border-b border-slate-700/40">
+            <td class="px-4 py-3 text-slate-400 text-xs font-mono">${t.dateStr || '-'}</td>
+            <td class="px-4 py-3 font-bold text-white text-xs">${t.symbol || '-'}</td>
+            <td class="px-4 py-3">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold border ${sideColor}">${t.side}</span>
+            </td>
+            <td class="px-4 py-3 font-mono text-xs text-slate-300">${t.lot || '-'}</td>
+            <td class="px-4 py-3 font-mono text-xs text-slate-300">${t.entryPrice} &rarr; ${t.exitPrice}</td>
+            <td class="px-4 py-3">
+              <span class="bg-blue-900/40 text-blue-300 border border-blue-700/40 px-2 py-0.5 rounded text-[11px]">${t.strategy || 'General'}</span>
+            </td>
+            <td class="px-4 py-3 ${pnlColor}">${(t.pnlPct >= 0 ? '+' : '')}${(t.pnlPct || 0).toFixed(2)}%</td>
+            <td class="px-4 py-3 ${pnlColor} font-mono">${displayVal}</td>
+            <td class="px-4 py-3 text-center">
+              <div class="flex items-center justify-center gap-1.5">
+                <button onclick='openDetailModal(${JSON.stringify(t)})' title="Detail" class="p-1.5 text-slate-400 hover:text-blue-400 transition">
+                  <i class="fas fa-eye"></i>
+                </button>
+                <button onclick='openTradeModal(${JSON.stringify(t)})' title="Edit" class="p-1.5 text-slate-400 hover:text-amber-400 transition">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button onclick="deleteTrade('${t.id}', ${t.isPublic})" title="Hapus" class="p-1.5 text-slate-400 hover:text-rose-400 transition">
+                  <i class="fas fa-trash"></i>
+                </button>
               </div>
-              <span class="text-xs px-2 py-0.5 rounded font-bold border ${sideColor}">${t.side}</span>
-            </div>
-
-            <div class="flex justify-between items-center">
-              <div>
-                <span class="text-base font-extrabold text-white">${t.symbol}</span>
-                <span class="block text-[11px] text-blue-400 font-medium">${t.strategy || 'General Setup'}</span>
-              </div>
-              <div class="text-right">
-                <span class="text-base font-bold ${isWin ? 'text-emerald-400' : 'text-rose-400'}">${(t.pnlPct >= 0 ? '+' : '')}${(t.pnlPct || 0).toFixed(2)}%</span>
-                <span class="block text-[11px] text-slate-400 font-mono">${displayVal}</span>
-              </div>
-            </div>
-
-            ${t.notes ? `<p class="text-xs text-slate-300 bg-slate-900/60 p-2.5 rounded-lg border border-slate-700/40 line-clamp-3">${t.notes}</p>` : ''}
-
-            <div class="flex justify-end items-center pt-1 text-xs">
-              ${t.chartUrl ? `<a href="${t.chartUrl}" target="_blank" class="text-blue-400 hover:text-blue-300 text-[11px] font-semibold flex items-center gap-1"><i class="fas fa-external-link-alt"></i> Chart</a>` : ''}
-            </div>
-          </div>
+            </td>
+          </tr>
         `;
       }).join('');
     }
