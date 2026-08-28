@@ -258,8 +258,8 @@
         </div>
       </div>
 
-      <!-- Advanced Analytics: Strategy & Emotion Performance -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <!-- Advanced Analytics: Strategy Performance -->
+      <div class="grid grid-cols-1 gap-6">
         <!-- Strategy Breakdown Chart -->
         <div class="bg-slate-800 p-5 rounded-xl border border-slate-700/60">
           <h3 class="text-sm font-bold text-slate-200 uppercase tracking-wider mb-4">
@@ -267,16 +267,6 @@
           </h3>
           <div class="h-60 w-full">
             <canvas id="strategyChart"></canvas>
-          </div>
-        </div>
-
-        <!-- Emotion Impact Chart -->
-        <div class="bg-slate-800 p-5 rounded-xl border border-slate-700/60">
-          <h3 class="text-sm font-bold text-slate-200 uppercase tracking-wider mb-4">
-            <i class="fas fa-brain text-amber-400 mr-2"></i> Dampak Psikologi & Emosi
-          </h3>
-          <div class="h-60 w-full">
-            <canvas id="emotionChart"></canvas>
           </div>
         </div>
       </div>
@@ -429,22 +419,10 @@
           </div>
         </div>
 
-        <!-- Strategy & Emotion -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Tag Strategi / Setup</label>
-            <input type="text" id="formStrategy" placeholder="misal: Breakout Retest, SMC FVG, Trend Following" class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Psikologi / Emosi Saat Trade</label>
-            <select id="formEmotion" class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
-              <option value="Disiplin">😌 Disiplin (Sesuai Plan)</option>
-              <option value="FOMO">😰 FOMO (Takut Ketinggalan)</option>
-              <option value="Greedy">🤑 Greedy (Terlalu Serakah)</option>
-              <option value="Revenge">😡 Revenge Trading (Balas Dendam)</option>
-              <option value="Cemas">😬 Ragu-ragu / Cemas</option>
-            </select>
-          </div>
+        <!-- Strategy -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Tag Strategi / Setup</label>
+          <input type="text" id="formStrategy" placeholder="misal: Breakout Retest, SMC FVG, Trend Following" class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
         </div>
 
         <!-- Notes & Screenshot Link -->
@@ -593,7 +571,6 @@
     window.equityChartInstance = null;
     window.winLossChartInstance = null;
     window.strategyChartInstance = null;
-    window.emotionChartInstance = null;
     let isLocalStorageFallback = false;
 
     // Render Auth Status Button & Avatar
@@ -626,14 +603,16 @@
         id: "demo_1",
         assetClass: "Crypto",
         symbol: "BTC/USDT",
-        side: "LONG",
+        side: "BUY",
+        lot: 0.1,
         entryPrice: 62500,
         exitPrice: 66800,
+        tp: 67000,
+        sl: 61000,
         margin: 500,
-        pnlPct: 41.28,
-        pnlVal: 206.40,
+        pnlPct: 6.88,
+        pnlVal: 430.00,
         strategy: "Breakout Retest",
-        emotion: "Disiplin",
         notes: "Bullish breakout di H4 resistance dengan konfirmasi volume tinggi.",
         chartUrl: "https://www.tradingview.com",
         isPublic: true,
@@ -646,14 +625,16 @@
         id: "demo_2",
         assetClass: "Forex",
         symbol: "EUR/USD",
-        side: "SHORT",
+        side: "SELL",
+        lot: 1.0,
         entryPrice: 1.0850,
         exitPrice: 1.0890,
+        tp: 1.0780,
+        sl: 1.0880,
         margin: 300,
-        pnlPct: -3.68,
-        pnlVal: -11.04,
+        pnlPct: -0.37,
+        pnlVal: -400.00,
         strategy: "SMC FVG",
-        emotion: "FOMO",
         notes: "Entry terlalu cepat tanpa menunggu rejection candle di M15.",
         chartUrl: "",
         isPublic: false,
@@ -963,6 +944,7 @@
     function closeCalcModal() {
       document.getElementById('calcModal').classList.add('hidden');
     }
+
     function runPositionCalc() {
       const balance = parseFloat(document.getElementById('calcModalBalance').value) || 0;
       const riskPct = parseFloat(document.getElementById('calcModalRiskPct').value) || 0;
@@ -970,193 +952,25 @@
       const sl = parseFloat(document.getElementById('calcModalSL').value) || 0;
       const lev = parseFloat(document.getElementById('calcModalLev').value) || 1;
 
-      const maxRiskVal = (balance * riskPct) / 100;
-      const distPct = Math.abs(entry - sl) / entry;
+      const maxRisk = (balance * riskPct) / 100;
+      const priceDiffPct = entry > 0 ? Math.abs(entry - sl) / entry : 0;
 
-      let posSizeVal = 0;
-      if (distPct > 0) {
-        posSizeVal = maxRiskVal / distPct;
+      let positionSize = 0;
+      if (priceDiffPct > 0) {
+        positionSize = maxRisk / priceDiffPct;
       }
-      const marginVal = posSizeVal / lev;
+      const marginReq = lev > 0 ? positionSize / lev : positionSize;
 
-      document.getElementById('resRiskVal').innerText = "$" + maxRiskVal.toFixed(2);
-      document.getElementById('resPosSizeVal').innerText = "$" + posSizeVal.toFixed(2);
-      document.getElementById('resMarginVal').innerText = "$" + marginVal.toFixed(2);
-    }
-
-    // Export / Import Features
-    function toggleDataMenu() {
-      document.getElementById('dataMenu').classList.toggle('hidden');
-    }
-
-    window.addEventListener('click', function(e) {
-      const menu = document.getElementById('dataMenu');
-      if (menu && !menu.contains(e.target) && !e.target.closest('button[onclick="toggleDataMenu()"]')) {
-        menu.classList.add('hidden');
-      }
-    });
-
-    function exportToCSV() {
-      const trades = window.userTrades || [];
-      if (trades.length === 0) {
-        showToast("Tidak ada data trade untuk diekspor.", "info");
-        return;
-      }
-
-      const headers = ["ID", "Tanggal", "Aset", "Simbol", "Tipe", "Harga Entry", "Harga Exit", "Margin ($)", "PnL (%)", "PnL ($)", "Strategi", "Emosi", "Catatan"];
-      const csvRows = [headers.join(",")];
-
-      trades.forEach(t => {
-        const row = [
-          `"${t.id || ''}"`,
-          `"${t.dateStr || ''}"`,
-          `"${t.assetClass || ''}"`,
-          `"${t.symbol || ''}"`,
-          `"${t.side || ''}"`,
-          t.entryPrice || 0,
-          t.exitPrice || 0,
-          t.margin || 0,
-          t.pnlPct || 0,
-          t.pnlVal || 0,
-          `"${(t.strategy || '').replace(/"/g, '""')}"`,
-          `"${(t.emotion || '').replace(/"/g, '""')}"`,
-          `"${(t.notes || '').replace(/"/g, '""')}"`
-        ];
-        csvRows.push(row.join(","));
-      });
-
-      const csvString = csvRows.join("\n");
-      const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.setAttribute("href", url);
-      link.setAttribute("download", `TradeJournal_Backup_${new Date().toISOString().slice(0,10)}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      showToast("Data trade berhasil diekspor ke CSV!", "success");
-    }
-
-    function exportToJSON() {
-      const trades = window.userTrades || [];
-      const jsonStr = JSON.stringify(trades, null, 2);
-      const blob = new Blob([jsonStr], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.setAttribute("href", url);
-      link.setAttribute("download", `TradeJournal_Backup_${new Date().toISOString().slice(0,10)}.json`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      showToast("Data trade berhasil diekspor ke JSON!", "success");
-    }
-
-    function importFromJSON(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        try {
-          const importedTrades = JSON.parse(e.target.result);
-          if (Array.isArray(importedTrades)) {
-            window.userTrades = importedTrades;
-            localStorage.setItem('tj_user_trades', JSON.stringify(window.userTrades));
-            updateMetrics();
-            renderTradesTable();
-            updateCharts();
-            showToast(`Berhasil mengimpor ${importedTrades.length} catatan trade!`, "success");
-          } else {
-            showToast("Format file JSON tidak valid.", "error");
-          }
-        } catch (err) {
-          showToast("Gagal membaca file JSON.", "error");
-        }
-      };
-      reader.readAsText(file);
-    }
-
-    // Dynamic Form Fields based on Asset Class
-    function onAssetClassChange() {
-      const assetClass = document.getElementById('formAssetClass').value;
-      const container = document.getElementById('dynamicFieldsContainer');
-
-      if (assetClass === 'Crypto') {
-        container.innerHTML = `
-          <div>
-            <label class="block text-[11px] font-semibold text-slate-400 mb-1">Leverage (x)</label>
-            <input type="number" id="formLeverage" value="1" min="1" max="125" oninput="calculateAutoPnL()" class="w-full bg-slate-800 border border-slate-700 text-white text-xs rounded px-2.5 py-1.5">
-          </div>
-          <div>
-            <label class="block text-[11px] font-semibold text-slate-400 mb-1">Tipe Order</label>
-            <select id="formOrderType" class="w-full bg-slate-800 border border-slate-700 text-white text-xs rounded px-2.5 py-1.5">
-              <option value="Futures">Futures</option>
-              <option value="Spot">Spot</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-[11px] font-semibold text-slate-400 mb-1">Jumlah Coin</label>
-            <input type="number" step="any" id="formUnits" placeholder="misal: 0.25" class="w-full bg-slate-800 border border-slate-700 text-white text-xs rounded px-2.5 py-1.5">
-          </div>
-        `;
-      } else if (assetClass === 'Forex') {
-        container.innerHTML = `
-          <div>
-            <label class="block text-[11px] font-semibold text-slate-400 mb-1">Lot Size</label>
-            <input type="number" step="0.01" id="formUnits" placeholder="misal: 0.10" class="w-full bg-slate-800 border border-slate-700 text-white text-xs rounded px-2.5 py-1.5">
-          </div>
-          <div>
-            <label class="block text-[11px] font-semibold text-slate-400 mb-1">Pips Gain/Loss</label>
-            <input type="number" step="any" id="formPips" placeholder="misal: +45" class="w-full bg-slate-800 border border-slate-700 text-white text-xs rounded px-2.5 py-1.5">
-          </div>
-          <div>
-            <label class="block text-[11px] font-semibold text-slate-400 mb-1">Risk/Reward (RRR)</label>
-            <input type="text" id="formRRR" placeholder="misal: 1:3" class="w-full bg-slate-800 border border-slate-700 text-white text-xs rounded px-2.5 py-1.5">
-          </div>
-        `;
-      } else if (assetClass === 'Saham') {
-        container.innerHTML = `
-          <div>
-            <label class="block text-[11px] font-semibold text-slate-400 mb-1">Jumlah Lot / Lembar</label>
-            <input type="number" id="formUnits" placeholder="misal: 100" class="w-full bg-slate-800 border border-slate-700 text-white text-xs rounded px-2.5 py-1.5">
-          </div>
-          <div>
-            <label class="block text-[11px] font-semibold text-slate-400 mb-1">Pasar</label>
-            <select id="formMarket" class="w-full bg-slate-800 border border-slate-700 text-white text-xs rounded px-2.5 py-1.5">
-              <option value="US Stocks">US Stocks (AAPL, TSLA)</option>
-              <option value="IDX">IHSG / Indonesia</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-[11px] font-semibold text-slate-400 mb-1">Target TP / SL</label>
-            <input type="text" id="formTarget" placeholder="misal: TP: 9500 / SL: 8800" class="w-full bg-slate-800 border border-slate-700 text-white text-xs rounded px-2.5 py-1.5">
-          </div>
-        `;
-      } else {
-        container.innerHTML = `
-          <div>
-            <label class="block text-[11px] font-semibold text-slate-400 mb-1">Jumlah Kontrak</label>
-            <input type="number" id="formUnits" placeholder="misal: 2" class="w-full bg-slate-800 border border-slate-700 text-white text-xs rounded px-2.5 py-1.5">
-          </div>
-          <div>
-            <label class="block text-[11px] font-semibold text-slate-400 mb-1">Tick / Point</label>
-            <input type="number" step="any" id="formTicks" placeholder="misal: 15.5" class="w-full bg-slate-800 border border-slate-700 text-white text-xs rounded px-2.5 py-1.5">
-          </div>
-          <div>
-            <label class="block text-[11px] font-semibold text-slate-400 mb-1">Leverage/Margin Ratio</label>
-            <input type="text" id="formLeverage" placeholder="misal: 1:50" class="w-full bg-slate-800 border border-slate-700 text-white text-xs rounded px-2.5 py-1.5">
-          </div>
-        `;
-      }
+      document.getElementById('resRiskVal').innerText = '$' + maxRisk.toFixed(2);
+      document.getElementById('resPosSizeVal').innerText = '$' + positionSize.toFixed(2);
+      document.getElementById('resMarginVal').innerText = '$' + marginReq.toFixed(2);
     }
 
     function calculateAutoPnL() {
       const entry = parseFloat(document.getElementById('formEntryPrice').value) || 0;
       const exit = parseFloat(document.getElementById('formExitPrice').value) || 0;
-      const margin = parseFloat(document.getElementById('formMargin').value) || 0;
+      const lot = parseFloat(document.getElementById('formLot').value) || 0;
       const side = document.getElementById('formSide').value;
-      const levEl = document.getElementById('formLeverage');
-      const leverage = levEl ? (parseFloat(levEl.value) || 1) : 1;
 
       if (entry <= 0 || exit <= 0) {
         document.getElementById('calcPnLPct').innerText = "0.00%";
@@ -1165,11 +979,16 @@
         return;
       }
 
-      let diffPct = ((exit - entry) / entry) * 100;
-      if (side === 'SHORT') diffPct = -diffPct;
+      let diff = exit - entry;
+      if (side === 'SELL' || side === 'SHORT') diff = -diff;
       
-      const totalPct = diffPct * leverage;
-      const pnlVal = (margin * totalPct) / 100;
+      const totalPct = (diff / entry) * 100;
+      
+      let multiplier = 1;
+      if (entry < 20) {
+        multiplier = 100000;
+      }
+      const pnlVal = (lot > 0) ? (diff * lot * multiplier) : 0;
 
       const pctEl = document.getElementById('calcPnLPct');
       const valEl = document.getElementById('calcPnLVal');
@@ -1200,20 +1019,17 @@
       document.getElementById('tradeForm').reset();
       document.getElementById('tradeId').value = "";
       document.getElementById('modalTitle').innerHTML = editData ? '<i class="fas fa-edit text-blue-500"></i> Edit Catatan Trade' : '<i class="fas fa-file-signature text-blue-500"></i> Catat Jurnal Trade Baru';
-      
-      onAssetClassChange();
 
       if (editData) {
         document.getElementById('tradeId').value = editData.id;
-        document.getElementById('formAssetClass').value = editData.assetClass || "Crypto";
-        onAssetClassChange();
         document.getElementById('formSymbol').value = editData.symbol || "";
-        document.getElementById('formSide').value = editData.side || "LONG";
+        document.getElementById('formSide').value = editData.side || "BUY";
+        document.getElementById('formLot').value = editData.lot || "";
         document.getElementById('formEntryPrice').value = editData.entryPrice || "";
         document.getElementById('formExitPrice').value = editData.exitPrice || "";
-        document.getElementById('formMargin').value = editData.margin || "";
+        document.getElementById('formTP').value = editData.tp || "";
+        document.getElementById('formSL').value = editData.sl || "";
         document.getElementById('formStrategy').value = editData.strategy || "";
-        document.getElementById('formEmotion').value = editData.emotion || "Disiplin";
         document.getElementById('formNotes').value = editData.notes || "";
         document.getElementById('formChartUrl').value = editData.chartUrl || "";
         document.getElementById('formIsPublic').checked = !!editData.isPublic;
@@ -1224,37 +1040,38 @@
       document.getElementById('tradeModal').classList.remove('hidden');
     }
 
-    function closeTradeModal() {
-      document.getElementById('tradeModal').classList.add('hidden');
-    }
-
     function handleSaveTrade(e) {
       e.preventDefault();
       
-      const entry = parseFloat(document.getElementById('formEntryPrice').value);
-      const exit = parseFloat(document.getElementById('formExitPrice').value);
-      const margin = parseFloat(document.getElementById('formMargin').value);
+      const entry = parseFloat(document.getElementById('formEntryPrice').value) || 0;
+      const exit = parseFloat(document.getElementById('formExitPrice').value) || 0;
+      const lot = parseFloat(document.getElementById('formLot').value) || 0;
+      const tp = parseFloat(document.getElementById('formTP').value) || null;
+      const sl = parseFloat(document.getElementById('formSL').value) || null;
       const side = document.getElementById('formSide').value;
-      const levEl = document.getElementById('formLeverage');
-      const leverage = levEl ? (parseFloat(levEl.value) || 1) : 1;
 
-      let diffPct = ((exit - entry) / entry) * 100;
-      if (side === 'SHORT') diffPct = -diffPct;
-      const pnlPct = diffPct * leverage;
-      const pnlVal = (margin * pnlPct) / 100;
+      let diff = exit - entry;
+      if (side === 'SELL' || side === 'SHORT') diff = -diff;
+      const pnlPct = (diff / entry) * 100;
+
+      let multiplier = 1;
+      if (entry < 20) {
+        multiplier = 100000;
+      }
+      const pnlVal = (lot > 0) ? (diff * lot * multiplier) : 0;
 
       const tradeData = {
         id: document.getElementById('tradeId').value,
-        assetClass: document.getElementById('formAssetClass').value,
         symbol: document.getElementById('formSymbol').value.toUpperCase().trim(),
         side: side,
+        lot: lot,
         entryPrice: entry,
         exitPrice: exit,
-        margin: margin,
+        tp: tp,
+        sl: sl,
         pnlPct: pnlPct,
         pnlVal: pnlVal,
         strategy: document.getElementById('formStrategy').value.trim() || 'General',
-        emotion: document.getElementById('formEmotion').value,
         notes: document.getElementById('formNotes').value.trim(),
         chartUrl: document.getElementById('formChartUrl').value.trim(),
         isPublic: document.getElementById('formIsPublic').checked,
@@ -1266,202 +1083,55 @@
       }
     }
 
-    function updateMetrics() {
-      const trades = window.userTrades || [];
-      if (trades.length === 0) {
-        document.getElementById('metricWinRate').innerText = "0%";
-        document.getElementById('metricWins').innerText = "0";
-        document.getElementById('metricLosses').innerText = "0";
-        document.getElementById('metricTotalPnLPct').innerText = "+0.00%";
-        document.getElementById('metricTotalPnLVal').innerText = "$0.00";
-        document.getElementById('metricProfitFactor').innerText = "0.00";
-        document.getElementById('metricTotalTrades').innerText = "0";
-        return;
-      }
-
-      let wins = 0;
-      let losses = 0;
-      let totalPnLPct = 0;
-      let totalPnLVal = 0;
-      let grossProfit = 0;
-      let grossLoss = 0;
-
-      trades.forEach(t => {
-        const pnl = t.pnlPct || 0;
-        const val = t.pnlVal || 0;
-        totalPnLPct += pnl;
-        totalPnLVal += val;
-
-        if (pnl > 0) {
-          wins++;
-          grossProfit += val;
-        } else if (pnl < 0) {
-          losses++;
-          grossLoss += Math.abs(val);
-        }
-      });
-
-      const winRate = ((wins / trades.length) * 100).toFixed(1);
-      const profitFactor = grossLoss > 0 ? (grossProfit / grossLoss).toFixed(2) : (grossProfit > 0 ? "MAX" : "0.00");
-
-      document.getElementById('metricWinRate').innerText = `${winRate}%`;
-      document.getElementById('metricWins').innerText = wins;
-      document.getElementById('metricLosses').innerText = losses;
-      
-      const pctEl = document.getElementById('metricTotalPnLPct');
-      pctEl.innerText = (totalPnLPct >= 0 ? "+" : "") + totalPnLPct.toFixed(2) + "%";
-      pctEl.className = `text-xl sm:text-2xl font-bold mt-1 ${totalPnLPct >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
-
-      const valEl = document.getElementById('metricTotalPnLVal');
-      if (window.privacyHideNominal) {
-        valEl.innerText = "***";
-      } else {
-        valEl.innerText = (totalPnLVal >= 0 ? "+$" : "-$") + Math.abs(totalPnLVal).toFixed(2);
-      }
-      valEl.className = `text-xl sm:text-2xl font-bold mt-1 ${totalPnLVal >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
-
-      document.getElementById('metricProfitFactor').innerText = profitFactor;
-      document.getElementById('metricTotalTrades').innerText = trades.length;
-    }
-
-    function renderTradesTable() {
-      const tbody = document.getElementById('tradesTableBody');
-      const filterAsset = document.getElementById('filterAsset').value;
-      const filterOutcome = document.getElementById('filterOutcome').value;
-
-      let trades = window.userTrades || [];
-
-      if (filterAsset !== 'ALL') {
-        trades = trades.filter(t => t.assetClass === filterAsset);
-      }
-      if (filterOutcome === 'WIN') {
-        trades = trades.filter(t => (t.pnlPct || 0) > 0);
-      } else if (filterOutcome === 'LOSS') {
-        trades = trades.filter(t => (t.pnlPct || 0) < 0);
-      }
-
-      if (trades.length === 0) {
-        tbody.innerHTML = `
-          <tr>
-            <td colspan="8" class="text-center py-8 text-slate-500">
-              <i class="fas fa-inbox text-3xl mb-2 block"></i>
-              Belum ada data trade. Klik "+ Catat Trade Baru" untuk memulai!
-            </td>
-          </tr>
-        `;
-        return;
-      }
-
-      tbody.innerHTML = trades.map(t => {
-        const isWin = (t.pnlPct || 0) >= 0;
-        const sideColor = t.side === 'LONG' || t.side === 'BUY' ? 'text-emerald-400 bg-emerald-950/60 border-emerald-800/50' : 'text-rose-400 bg-rose-950/60 border-rose-800/50';
-        const pnlPctColor = isWin ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold';
-        
-        const displayVal = window.privacyHideNominal ? '***' : ((t.pnlVal >= 0 ? '+$' : '-$') + Math.abs(t.pnlVal || 0).toFixed(2));
-
-        return `
-          <tr class="hover:bg-slate-700/30 transition border-b border-slate-700/40">
-            <td class="px-4 py-3 text-slate-400 font-mono text-xs">${t.dateStr || '-'}</td>
-            <td class="px-4 py-3 font-semibold text-slate-100 flex items-center gap-1.5">
-              <span>${t.symbol}</span>
-              <span class="text-[10px] text-slate-400 bg-slate-700 px-1.5 py-0.5 rounded font-normal">${t.assetClass}</span>
-            </td>
-            <td class="px-4 py-3">
-              <span class="px-2 py-0.5 rounded text-[11px] border font-bold ${sideColor}">${t.side}</span>
-            </td>
-            <td class="px-4 py-3 font-mono text-slate-300 text-xs">
-              ${t.entryPrice} <i class="fas fa-arrow-right text-[10px] text-slate-500 mx-1"></i> ${t.exitPrice}
-            </td>
-            <td class="px-4 py-3">
-              <span class="bg-blue-950/60 text-blue-300 px-2 py-0.5 rounded text-[11px] border border-blue-800/50">
-                ${t.strategy || 'General'}
-              </span>
-            </td>
-            <td class="px-4 py-3 ${pnlPctColor}">
-              ${(t.pnlPct >= 0 ? '+' : '')}${(t.pnlPct || 0).toFixed(2)}%
-            </td>
-            <td class="px-4 py-3 ${pnlPctColor} font-mono">
-              ${displayVal}
-            </td>
-            <td class="px-4 py-3 text-center">
-              <div class="flex items-center justify-center space-x-2">
-                <button onclick='openDetailModal(${JSON.stringify(t)})' title="Detail & Chart" class="text-slate-400 hover:text-blue-400 p-1">
-                  <i class="fas fa-expand"></i>
-                </button>
-                <button onclick='openTradeModal(${JSON.stringify(t)})' title="Edit" class="text-slate-400 hover:text-amber-400 p-1">
-                  <i class="fas fa-edit"></i>
-                </button>
-                <button onclick="deleteTrade('${t.id}', ${!!t.isPublic})" title="Hapus" class="text-slate-400 hover:text-rose-400 p-1">
-                  <i class="fas fa-trash-alt"></i>
-                </button>
-              </div>
-            </td>
-          </tr>
-        `;
-      }).join('');
-    }
-
     function renderPublicFeed() {
-      const container = document.getElementById('publicFeedGrid');
-      const trades = window.publicTrades || [];
+      const grid = document.getElementById('publicFeedGrid');
+      if (!grid) return;
 
+      const trades = window.publicTrades || [];
       if (trades.length === 0) {
-        container.innerHTML = `
-          <div class="col-span-full text-center py-12 text-slate-500">
-            <i class="fas fa-users-slash text-4xl mb-3 block"></i>
-            <p>Belum ada trade yang dibagikan ke publik.</p>
+        grid.innerHTML = `
+          <div class="col-span-full text-center py-10 text-slate-500 bg-slate-800/40 rounded-xl border border-slate-700/40">
+            <i class="fas fa-users-slash text-3xl mb-2 block"></i>
+            <p class="text-sm">Belum ada trade publik dari komunitas.</p>
           </div>
         `;
         return;
       }
 
-      container.innerHTML = trades.map(t => {
+      grid.innerHTML = trades.map(t => {
         const isWin = (t.pnlPct || 0) >= 0;
-        const valDisplay = window.privacyHideNominal ? '***' : ((t.pnlVal >= 0 ? '+$' : '-$') + Math.abs(t.pnlVal || 0).toFixed(2));
+        const sideColor = t.side === 'BUY' || t.side === 'LONG' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-rose-500/10 text-rose-400 border-rose-500/30';
+        const displayVal = window.privacyHideNominal ? '***' : ((t.pnlVal >= 0 ? '+$' : '-$') + Math.abs(t.pnlVal || 0).toFixed(2));
 
         return `
-          <div class="bg-slate-800 border border-slate-700/80 rounded-xl p-4 space-y-3 relative hover:border-slate-600 transition shadow-lg">
-            <div class="flex justify-between items-center border-b border-slate-700/60 pb-2.5">
-              <div class="flex items-center space-x-2">
-                <img src="${t.userPhoto || 'https://via.placeholder.com/32'}" class="w-7 h-7 rounded-full border border-blue-500" alt="User">
+          <div class="bg-slate-800 border border-slate-700/70 rounded-xl p-4 space-y-3 shadow-md">
+            <div class="flex items-center justify-between border-b border-slate-700/50 pb-2.5">
+              <div class="flex items-center gap-2">
+                <img src="${t.userPhoto || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + t.symbol}" class="w-7 h-7 rounded-full border border-blue-500/50" alt="Avatar">
                 <div>
-                  <h4 class="text-xs font-bold text-slate-200">${t.userDisplayName || 'Trader'}</h4>
-                  <span class="text-[10px] text-slate-400">${t.dateStr || ''}</span>
+                  <h4 class="text-xs font-bold text-slate-200">${t.userDisplayName || 'Trader Anonim'}</h4>
+                  <span class="text-[10px] text-slate-400 font-mono">${t.dateStr || ''}</span>
                 </div>
               </div>
-              <span class="px-2 py-0.5 rounded text-[10px] font-bold ${isWin ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-rose-950 text-rose-400 border border-rose-800'}">
-                ${isWin ? 'PROFIT' : 'LOSS'}
-              </span>
+              <span class="text-xs px-2 py-0.5 rounded font-bold border ${sideColor}">${t.side}</span>
             </div>
 
-            <div class="flex justify-between items-baseline">
+            <div class="flex justify-between items-center">
               <div>
-                <span class="text-lg font-black text-white">${t.symbol}</span>
-                <span class="text-xs text-slate-400 ml-1">(${t.assetClass})</span>
-              </div>
-              <span class="text-sm font-bold ${isWin ? 'text-emerald-400' : 'text-rose-400'}">
-                ${(t.pnlPct >= 0 ? '+' : '')}${(t.pnlPct || 0).toFixed(2)}%
-              </span>
-            </div>
-
-            <div class="grid grid-cols-2 gap-2 bg-slate-900/60 p-2.5 rounded-lg text-xs font-mono">
-              <div>
-                <span class="block text-[10px] text-slate-500">ENTRY / EXIT</span>
-                <span class="text-slate-300">${t.entryPrice} -> ${t.exitPrice}</span>
+                <span class="text-base font-extrabold text-white">${t.symbol}</span>
+                <span class="block text-[11px] text-blue-400 font-medium">${t.strategy || 'General Setup'}</span>
               </div>
               <div class="text-right">
-                <span class="block text-[10px] text-slate-500">ESTIMASI PNL ($)</span>
-                <span class="${isWin ? 'text-emerald-400' : 'text-rose-400'} font-bold">${valDisplay}</span>
+                <span class="text-base font-bold ${isWin ? 'text-emerald-400' : 'text-rose-400'}">${(t.pnlPct >= 0 ? '+' : '')}${(t.pnlPct || 0).toFixed(2)}%</span>
+                <span class="block text-[11px] text-slate-400 font-mono">${displayVal}</span>
               </div>
             </div>
 
-            ${t.notes ? `<p class="text-xs text-slate-300 bg-slate-900/30 p-2 rounded border border-slate-700/40 italic">"${t.notes}"</p>` : ''}
+            ${t.notes ? `<p class="text-xs text-slate-300 bg-slate-900/60 p-2.5 rounded-lg border border-slate-700/40 line-clamp-3">${t.notes}</p>` : ''}
 
-            ${t.chartUrl ? `
-              <a href="${t.chartUrl}" target="_blank" class="inline-flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 font-medium">
-                <i class="fas fa-external-link-alt"></i> Lihat Screenshot Chart
-              </a>
-            ` : ''}
+            <div class="flex justify-end items-center pt-1 text-xs">
+              ${t.chartUrl ? `<a href="${t.chartUrl}" target="_blank" class="text-blue-400 hover:text-blue-300 text-[11px] font-semibold flex items-center gap-1"><i class="fas fa-external-link-alt"></i> Chart</a>` : ''}
+            </div>
           </div>
         `;
       }).join('');
@@ -1469,21 +1139,32 @@
 
     function openDetailModal(t) {
       document.getElementById('detailSymbol').innerText = t.symbol;
-      document.getElementById('detailSubtitle').innerText = `${t.assetClass} • ${t.side} Position (${t.dateStr || ''})`;
+      document.getElementById('detailSubtitle').innerText = `Posisi: ${t.side} • Lot: ${t.lot || '-'} (${t.dateStr || ''})`;
 
       const isWin = (t.pnlPct || 0) >= 0;
       const displayVal = window.privacyHideNominal ? '***' : ((t.pnlVal >= 0 ? '+$' : '-$') + Math.abs(t.pnlVal || 0).toFixed(2));
 
       document.getElementById('detailContent').innerHTML = `
-        <div class="grid grid-cols-2 gap-3 bg-slate-900/80 p-3 rounded-lg border border-slate-700">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-900/80 p-3 rounded-lg border border-slate-700">
           <div>
-            <span class="block text-xs text-slate-400">Harga Entry</span>
+            <span class="block text-xs text-slate-400">Entry</span>
             <span class="font-mono text-white font-bold">${t.entryPrice}</span>
           </div>
           <div>
-            <span class="block text-xs text-slate-400">Harga Exit</span>
+            <span class="block text-xs text-slate-400">Exit</span>
             <span class="font-mono text-white font-bold">${t.exitPrice}</span>
           </div>
+          <div>
+            <span class="block text-xs text-slate-400">Target TP</span>
+            <span class="font-mono text-emerald-400 font-bold">${t.tp || '-'}</span>
+          </div>
+          <div>
+            <span class="block text-xs text-slate-400">Batas SL</span>
+            <span class="font-mono text-rose-400 font-bold">${t.sl || '-'}</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 bg-slate-900/50 p-3 rounded-lg border border-slate-700/60">
           <div>
             <span class="block text-xs text-slate-400">Hasil PnL (%)</span>
             <span class="font-bold ${isWin ? 'text-emerald-400' : 'text-rose-400'}">${(t.pnlPct >= 0 ? '+' : '')}${(t.pnlPct || 0).toFixed(2)}%</span>
@@ -1496,38 +1177,12 @@
 
         <div class="space-y-2">
           <p><strong class="text-slate-400">Strategi Setup:</strong> <span class="bg-blue-900/60 text-blue-300 px-2 py-0.5 rounded text-xs">${t.strategy || 'Umum'}</span></p>
-          <p><strong class="text-slate-400">Psikologi / Emosi:</strong> <span class="text-slate-200">${t.emotion || '-'}</span></p>
           ${t.notes ? `<div class="p-3 bg-slate-900 rounded-lg border border-slate-700/60"><strong class="block text-xs text-slate-400 mb-1">Catatan Analisa:</strong><p class="text-xs text-slate-200 leading-relaxed">${t.notes}</p></div>` : ''}
-          ${t.chartUrl ? `<div class="pt-2"><a href="${t.chartUrl}" target="_blank" class="text-xs bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg inline-flex items-center gap-2"><i class="fas fa-chart-bar"></i> Buka Link Chart TradingView</a></div>` : ''}
+          ${t.chartUrl ? `<div class="pt-2"><a href="${t.chartUrl}" target="_blank" class="text-xs bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg inline-flex items-center gap-2"><i class="fas fa-chart-bar"></i> Buka Link Screenshot Chart</a></div>` : ''}
         </div>
       `;
 
       document.getElementById('detailModal').classList.remove('hidden');
-    }
-
-    function closeDetailModal() {
-      document.getElementById('detailModal').classList.add('hidden');
-    }
-
-    function openDomainModal() {
-      const currentDomain = window.location.hostname || 'localhost';
-      document.getElementById('currentDomainText').innerText = currentDomain;
-      document.getElementById('domainModal').classList.remove('hidden');
-    }
-
-    function closeDomainModal() {
-      document.getElementById('domainModal').classList.add('hidden');
-    }
-
-    function copyCurrentDomain() {
-      const domain = document.getElementById('currentDomainText').innerText;
-      const tempInput = document.createElement('input');
-      tempInput.value = domain;
-      document.body.appendChild(tempInput);
-      tempInput.select();
-      document.execCommand('copy');
-      document.body.removeChild(tempInput);
-      showToast('Domain disalin: ' + domain, 'success');
     }
 
     // Chart.js Analytics Engine
@@ -1627,43 +1282,6 @@
               label: 'Total PnL (%)',
               data: stratValues.length ? stratValues : [0],
               backgroundColor: stratValues.map(v => v >= 0 ? 'rgba(16, 185, 129, 0.8)' : 'rgba(239, 68, 68, 0.8)'),
-              borderRadius: 6
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-              x: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#94a3b8' } },
-              y: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#94a3b8' } }
-            }
-          }
-        });
-      }
-
-      // 4. Emotion Chart (Bar)
-      const emotionCtx = document.getElementById('emotionChart')?.getContext('2d');
-      if (emotionCtx) {
-        if (window.emotionChartInstance) window.emotionChartInstance.destroy();
-
-        const emotionMap = {};
-        trades.forEach(t => {
-          const e = t.emotion || 'Disiplin';
-          emotionMap[e] = (emotionMap[e] || 0) + (t.pnlPct || 0);
-        });
-
-        const emoLabels = Object.keys(emotionMap);
-        const emoValues = Object.values(emotionMap);
-
-        window.emotionChartInstance = new Chart(emotionCtx, {
-          type: 'bar',
-          data: {
-            labels: emoLabels.length ? emoLabels : ['Disiplin'],
-            datasets: [{
-              label: 'PnL berdasarkan Emosi (%)',
-              data: emoValues.length ? emoValues : [0],
-              backgroundColor: emoValues.map(v => v >= 0 ? 'rgba(59, 130, 246, 0.8)' : 'rgba(245, 158, 11, 0.8)'),
               borderRadius: 6
             }]
           },
