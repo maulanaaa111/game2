@@ -123,6 +123,9 @@
             <button onclick="switchTab('analytics')" id="tab-analytics" class="tab-btn px-4 py-2 border-b-2 border-transparent text-gray-400 hover:text-gray-200 flex items-center gap-2 whitespace-nowrap">
                 <i class="fa-solid fa-chart-pie"></i> Analisis Strategi & Psikologi
             </button>
+            <button onclick="switchTab('calendar')" id="tab-calendar" class="tab-btn px-4 py-2 border-b-2 border-transparent text-gray-400 hover:text-gray-200 flex items-center gap-2 whitespace-nowrap">
+                <i class="fa-solid fa-calendar-days"></i> Kalender P&L
+            </button>
             <button onclick="switchTab('calculator')" id="tab-calculator" class="tab-btn px-4 py-2 border-b-2 border-transparent text-gray-400 hover:text-gray-200 flex items-center gap-2 whitespace-nowrap">
                 <i class="fa-solid fa-calculator"></i> Risk Calculator
             </button>
@@ -293,7 +296,65 @@
             </div>
         </section>
 
-        <!-- ================= TAB 4: RISK CALCULATOR ================= -->
+        <!-- ================= TAB 4: CALENDAR P&L ================= -->
+        <section id="view-calendar" class="hidden space-y-6">
+            <!-- Calendar Header Controls & Monthly Summary -->
+            <div class="bg-dark-800 p-5 rounded-2xl border border-gray-800 space-y-4">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div class="flex items-center gap-3">
+                        <button onclick="changeCalMonth(-1)" class="p-2.5 rounded-xl bg-dark-700 hover:bg-gray-700 text-gray-300 transition">
+                            <i class="fa-solid fa-chevron-left text-sm"></i>
+                        </button>
+                        <h2 id="calMonthTitle" class="text-lg font-bold text-gray-100 min-w-[160px] text-center">
+                            Februari 2026
+                        </h2>
+                        <button onclick="changeCalMonth(1)" class="p-2.5 rounded-xl bg-dark-700 hover:bg-gray-700 text-gray-300 transition">
+                            <i class="fa-solid fa-chevron-right text-sm"></i>
+                        </button>
+                        <button onclick="resetCalMonth()" class="px-3.5 py-1.5 text-xs bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 text-blue-400 rounded-xl transition font-medium">
+                            Bulan Ini
+                        </button>
+                    </div>
+
+                    <!-- Monthly Stats Badges -->
+                    <div class="flex flex-wrap items-center gap-3 text-xs w-full sm:w-auto">
+                        <div class="bg-dark-900/80 px-3.5 py-2 rounded-xl border border-gray-700/60 flex-1 sm:flex-none">
+                            <span class="text-gray-400 block text-[10px]">P&L Bulan Ini</span>
+                            <span id="calMonthPnL" class="font-bold text-sm text-emerald-400">$0.00</span>
+                        </div>
+                        <div class="bg-dark-900/80 px-3.5 py-2 rounded-xl border border-gray-700/60 flex-1 sm:flex-none">
+                            <span class="text-gray-400 block text-[10px]">Hari Profit / Loss</span>
+                            <span id="calMonthWinDays" class="font-bold text-sm text-gray-200">0W / 0L</span>
+                        </div>
+                        <div class="bg-dark-900/80 px-3.5 py-2 rounded-xl border border-gray-700/60 flex-1 sm:flex-none">
+                            <span class="text-gray-400 block text-[10px]">Total Eksekusi</span>
+                            <span id="calMonthTrades" class="font-bold text-sm text-blue-400">0 Trade</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Calendar Days Grid Container -->
+            <div class="bg-dark-800 p-4 sm:p-5 rounded-2xl border border-gray-800">
+                <!-- Day Names Header (Sen - Min) -->
+                <div class="grid grid-cols-7 gap-1.5 sm:gap-2 text-center text-xs font-semibold text-gray-400 mb-3">
+                    <div class="py-1">Sen</div>
+                    <div class="py-1">Sel</div>
+                    <div class="py-1">Rab</div>
+                    <div class="py-1">Kam</div>
+                    <div class="py-1">Jum</div>
+                    <div class="py-1 text-rose-400">Sab</div>
+                    <div class="py-1 text-rose-400">Min</div>
+                </div>
+
+                <!-- Calendar Days Grid -->
+                <div id="calendarGrid" class="grid grid-cols-7 gap-1.5 sm:gap-2">
+                    <!-- Dynamic day cells rendered via JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= TAB 5: RISK CALCULATOR ================= -->
         <section id="view-calculator" class="hidden">
             <div class="max-w-2xl mx-auto bg-dark-800 p-6 rounded-2xl border border-gray-800 space-y-6">
                 <div>
@@ -567,15 +628,34 @@
                     </div>
                 </div>
                 <div class="flex justify-end gap-2 pt-2">
-                    <button type="button" onclick="resetAccountForm()" class="px-3 py-1.5 rounded-lg text-xs text-gray-400 hover:bg-dark-700 transition">Batal</button>
-                    <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-1.5 rounded-lg text-xs font-semibold shadow transition">Simpan Akun</button>
-                </div>
-            </form>
+                <button type="button" onclick="resetAccountForm()" class="px-3 py-1.5 rounded-lg text-xs text-gray-400 hover:bg-dark-700 transition">Batal</button>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-1.5 rounded-lg text-xs font-semibold shadow transition">Simpan Akun</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Detail Trade Per Hari -->
+<div id="dayDetailModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm overflow-y-auto">
+    <div class="bg-dark-800 border border-gray-700 rounded-2xl w-full max-w-md p-6 shadow-2xl relative">
+        <div class="flex justify-between items-center mb-4 border-b border-gray-700 pb-3">
+            <div>
+                <h3 id="dayDetailTitle" class="text-base font-bold text-gray-100">Detail Trade - 25 Feb 2026</h3>
+                <p id="dayDetailSubtitle" class="text-xs text-gray-400 mt-0.5">Total P&L Hari Ini: +$0.00</p>
+            </div>
+            <button onclick="closeModal('dayDetailModal')" class="text-gray-400 hover:text-white p-1 rounded-lg">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+        </div>
+
+        <div id="dayDetailList" class="space-y-2.5 max-h-80 overflow-y-auto pr-1">
+            <!-- Dynamic list of trades for the selected day -->
         </div>
     </div>
+</div>
 
-    <!-- Firebase SDK & Application Logic -->
-    <script type="module">
+<!-- Firebase SDK & Application Logic -->
+<script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { 
             getAuth, 
@@ -624,6 +704,9 @@
         let unsubscribeAccounts = null;
         let tradeToDeleteId = null;
         let isRegisterMode = false;
+
+        // Calendar state
+        let currentCalDate = new Date();
 
         // Active selected account state ('ALL' or account ID)
         let currentAccountId = 'ALL';
@@ -1090,20 +1173,210 @@
 
             if (tabName === 'analytics') {
                 renderAnalyticsCharts();
+            } else if (tabName === 'calendar') {
+                renderPnLCalendar();
             }
         }
+        function changeCalMonth(offset) {
+            currentCalDate.setMonth(currentCalDate.getMonth() + offset);
+            renderPnLCalendar();
+        }
 
-        function showToast(message, type = 'success') {
-            const toast = document.getElementById('toast');
-            const toastMsg = document.getElementById('toastMsg');
-            const toastIcon = document.getElementById('toastIcon');
+        function resetCalMonth() {
+            currentCalDate = new Date();
+            renderPnLCalendar();
+        }
 
-            toastMsg.textContent = message;
-            if (type === 'success') {
-                toastIcon.className = 'fa-solid fa-circle-check text-emerald-400 text-lg';
-            } else {
-                toastIcon.className = 'fa-solid fa-circle-exclamation text-rose-400 text-lg';
+        function renderPnLCalendar() {
+            const year = currentCalDate.getFullYear();
+            const month = currentCalDate.getMonth();
+
+            const monthNames = [
+                'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+                'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+            ];
+
+            document.getElementById('calMonthTitle').textContent = `${monthNames[month]} ${year}`;
+
+            const activeTrades = getFilteredTradesByAccount();
+
+            // Group trades by ISO Date YYYY-MM-DD
+            const tradesByDate = {};
+            activeTrades.forEach(t => {
+                if (!t.date) return;
+                const dateKey = t.date.slice(0, 10);
+                if (!tradesByDate[dateKey]) tradesByDate[dateKey] = [];
+                tradesByDate[dateKey].push(t);
+            });
+
+            // Calculate month metrics
+            let monthPnL = 0;
+            let monthTradeCount = 0;
+            let winDays = 0;
+            let lossDays = 0;
+
+            // Calendar days calculations
+            const firstDayOfMonth = new Date(year, month, 1);
+            const lastDayOfMonth = new Date(year, month + 1, 0);
+            const daysInMonth = lastDayOfMonth.getDate();
+
+            // Get day index (0 = Mon, 6 = Sun)
+            let startDayOfWeek = firstDayOfMonth.getDay() - 1;
+            if (startDayOfWeek === -1) startDayOfWeek = 6; // Sunday fix
+
+            const grid = document.getElementById('calendarGrid');
+            grid.innerHTML = '';
+
+            // Render padding cells for previous month days
+            for (let i = 0; i < startDayOfWeek; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = 'bg-dark-900/40 rounded-xl p-2 min-h-[85px] border border-gray-800/40 opacity-30';
+                grid.appendChild(emptyCell);
             }
+
+            const todayStr = new Date().toISOString().slice(0, 10);
+
+            // Render days of the month
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayMonthStr = String(month + 1).padStart(2, '0');
+                const dayStr = String(day).padStart(2, '0');
+                const dateKey = `${year}-${dayMonthStr}-${dayStr}`;
+
+                const dayTrades = tradesByDate[dateKey] || [];
+                const dayPnL = dayTrades.reduce((acc, t) => acc + (t.pnl || 0), 0);
+                const hasTrades = dayTrades.length > 0;
+
+                if (hasTrades) {
+                    monthPnL += dayPnL;
+                    monthTradeCount += dayTrades.length;
+                    if (dayPnL > 0) winDays++;
+                    else if (dayPnL < 0) lossDays++;
+                }
+
+                const isToday = dateKey === todayStr;
+
+                let cardBg = 'bg-dark-900/80 border-gray-800 text-gray-400 hover:border-gray-700';
+                let pnlTextClass = 'text-gray-500';
+
+                if (hasTrades) {
+                    if (dayPnL > 0) {
+                        cardBg = 'bg-emerald-950/30 border-emerald-500/30 text-emerald-400 hover:border-emerald-500/60 shadow-lg shadow-emerald-950/20';
+                        pnlTextClass = 'text-emerald-400 font-bold';
+                    } else if (dayPnL < 0) {
+                        cardBg = 'bg-rose-950/30 border-rose-500/30 text-rose-400 hover:border-rose-500/60 shadow-lg shadow-rose-950/20';
+                        pnlTextClass = 'text-rose-400 font-bold';
+                    } else {
+                        cardBg = 'bg-gray-800/50 border-gray-700 text-gray-300';
+                        pnlTextClass = 'text-gray-300 font-semibold';
+                    }
+                }
+
+                const cell = document.createElement('div');
+                cell.className = `rounded-xl p-2 min-h-[85px] sm:min-h-[100px] border flex flex-col justify-between transition-all cursor-pointer ${cardBg} ${isToday ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-dark-900' : ''}`;
+                cell.onclick = () => openDayDetail(dateKey, dayTrades, dayPnL);
+
+                cell.innerHTML = `
+                    <div class="flex items-center justify-between text-xs font-semibold">
+                        <span class="${isToday ? 'bg-blue-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px]' : ''}">${day}</span>
+                        ${hasTrades ? `<span class="text-[10px] bg-dark-800/80 px-1.5 py-0.5 rounded text-gray-400 border border-gray-700/50">${dayTrades.length} trade</span>` : ''}
+                    </div>
+                    <div class="mt-2 text-right">
+                        ${hasTrades ? `<span class="text-xs sm:text-sm ${pnlTextClass}">${dayPnL >= 0 ? '+' : ''}$${dayPnL.toFixed(2)}</span>` : '<span class="text-[11px] text-gray-600">-</span>'}
+                    </div>
+                `;
+
+                grid.appendChild(cell);
+            }
+
+            // Update monthly summary header stats
+            const monthPnLEl = document.getElementById('calMonthPnL');
+            monthPnLEl.textContent = `${monthPnL >= 0 ? '+' : ''}$${monthPnL.toFixed(2)}`;
+            monthPnLEl.className = `font-bold text-sm ${monthPnL >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+
+            document.getElementById('calMonthWinDays').textContent = `${winDays}W / ${lossDays}L`;
+            document.getElementById('calMonthTrades').textContent = `${monthTradeCount} Trade`;
+        }
+
+        function openDayDetail(dateKey, dayTrades, dayPnL) {
+            const listEl = document.getElementById('dayDetailList');
+            const formattedDate = new Date(dateKey + 'T00:00:00').toLocaleDateString('id-ID', {
+                weekday: 'long', day: 'numeric', month: 'short', year: 'numeric'
+            });
+
+            document.getElementById('dayDetailTitle').textContent = `Detail Trade - ${formattedDate}`;
+            
+            const pnlEl = document.getElementById('dayDetailSubtitle');
+            pnlEl.textContent = `Total P&L Hari Ini: ${dayPnL >= 0 ? '+' : ''}$${dayPnL.toFixed(2)}`;
+            pnlEl.className = `text-xs font-semibold mt-0.5 ${dayPnL >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+
+            if (!dayTrades || dayTrades.length === 0) {
+                listEl.innerHTML = `<p class="text-xs text-gray-500 text-center py-6">Tidak ada histori trade pada tanggal ini.</p>`;
+            } else {
+                listEl.innerHTML = dayTrades.map(t => {
+                    const isProfit = t.pnl > 0;
+                    const isLoss = t.pnl < 0;
+                    const pnlClass = isProfit ? 'text-emerald-400' : (isLoss ? 'text-rose-400' : 'text-gray-400');
+                    return `
+                        <div class="bg-dark-900 p-3 rounded-xl border border-gray-700/60 flex items-center justify-between">
+                            <div>
+                                <div class="flex items-center gap-2 text-xs font-bold text-gray-200">
+                                    <span class="px-1.5 py-0.5 rounded text-[10px] ${t.type === 'LONG' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}">${t.type}</span>
+                                    ${t.pair}
+                                    <span class="text-gray-400 font-normal">(${t.size} Lot)</span>
+                                </div>
+                                <div class="text-[11px] text-gray-400 mt-1">Entry: $${t.entry} | Exit: $${t.exit}</div>
+                                ${t.setup ? `<span class="inline-block bg-gray-800 text-gray-300 text-[10px] px-1.5 py-0.5 rounded mt-1 border border-gray-700">${t.setup}</span>` : ''}
+                            </div>
+                            <div class="text-right">
+                                <div class="text-xs font-bold ${pnlClass}">${t.pnl >= 0 ? '+' : ''}$${t.pnl.toFixed(2)}</div>
+                                <div class="text-[10px] text-gray-400 mt-0.5">R:R ${t.rr || '0'}</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            openModal('dayDetailModal');
+        }
+
+        function updateDashboard() {
+            const activeTrades = getFilteredTradesByAccount();
+            const totalTrades = activeTrades.length;
+            const wins = activeTrades.filter(t => t.pnl > 0);
+            const losses = activeTrades.filter(t => t.pnl < 0);
+            const beps = activeTrades.filter(t => t.pnl === 0);
+
+            const winCount = wins.length;
+            const lossCount = losses.length;
+            const winRate = totalTrades > 0 ? ((winCount / totalTrades) * 100).toFixed(1) : '0.0';
+
+            const totalPnL = activeTrades.reduce((acc, t) => acc + (t.pnl || 0), 0);
+            const grossProfit = wins.reduce((acc, t) => acc + t.pnl, 0);
+            const grossLoss = Math.abs(losses.reduce((acc, t) => acc + t.pnl, 0));
+            const profitFactor = grossLoss > 0 ? (grossProfit / grossLoss).toFixed(2) : (grossProfit > 0 ? 'INF' : '0.00');
+
+            const bestTrade = activeTrades.length > 0 ? Math.max(...activeTrades.map(t => t.pnl)) : 0;
+            const worstTrade = activeTrades.length > 0 ? Math.min(...activeTrades.map(t => t.pnl)) : 0;
+
+            const pnlEl = document.getElementById('stat-pnl');
+            pnlEl.textContent = `${totalPnL >= 0 ? '+' : ''}$${totalPnL.toFixed(2)}`;
+            pnlEl.className = `text-xl font-bold ${totalPnL >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+
+            document.getElementById('stat-winrate').textContent = `${winRate}%`;
+            document.getElementById('stat-wins').textContent = winCount;
+            document.getElementById('stat-losses').textContent = lossCount;
+            document.getElementById('stat-pf').textContent = profitFactor;
+            document.getElementById('stat-trades').textContent = totalTrades;
+            document.getElementById('stat-best').textContent = `$${bestTrade.toFixed(2)}`;
+            document.getElementById('stat-worst').textContent = `$${worstTrade.toFixed(2)}`;
+
+            document.getElementById('donutWin').textContent = winCount;
+            document.getElementById('donutLoss').textContent = lossCount;
+            document.getElementById('donutBep').textContent = beps.length;
+
+            updateChartsData(activeTrades);
+            renderPnLCalendar();
+        }
 
             toast.classList.remove('hidden');
             setTimeout(() => toast.classList.add('hidden'), 3000);
@@ -1590,6 +1863,12 @@
         window.editAccount = editAccount;
         window.deleteAccount = deleteAccount;
         window.resetAccountForm = resetAccountForm;
+
+        /* PnL Calendar global bindings */
+        window.changeCalMonth = changeCalMonth;
+        window.resetCalMonth = resetCalMonth;
+        window.renderPnLCalendar = renderPnLCalendar;
+        window.openDayDetail = openDayDetail;
     </script>
 </body>
 </html>
