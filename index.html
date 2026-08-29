@@ -1,626 +1,541 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jurnal Trading Pro - Multi-Akun</title>
-    <!-- Tailwind CSS -->
+    <title>TradeLog Pro - Jurnal Trading Professional</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
-                        brand: {
-                            50: '#f0f9ff',
-                            100: '#e0f2fe',
-                            500: '#0ea5e9',
-                            600: '#0284c7',
-                            700: '#0369a1',
-                            900: '#0c4a6e',
+                        dark: {
+                            900: '#0b0f17',
+                            800: '#111827',
+                            700: '#1f2937',
+                            600: '#374151'
                         },
-                        trade: {
-                            win: '#10b981',
-                            loss: '#ef4444',
-                            be: '#f59e0b',
-                            open: '#3b82f6'
+                        accent: {
+                            green: '#10b981',
+                            red: '#ef4444',
+                            blue: '#3b82f6',
+                            purple: '#8b5cf6'
                         }
                     }
                 }
             }
         }
     </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
         }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: #1e293b;
+        ::-webkit-scrollbar-track {
+            background: #111827;
         }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #475569;
-            border-radius: 3px;
+        ::-webkit-scrollbar-thumb {
+            background: #374151;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4b5563;
         }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col custom-scrollbar">
+<body class="bg-dark-900 text-gray-100 font-sans antialiased min-h-screen flex flex-col">
 
-    <!-- Header / Navbar -->
-    <header class="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 sticky top-0 z-30">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
-            
-            <!-- Logo & Title -->
-            <div class="flex items-center space-x-3">
-                <div class="bg-brand-600 text-white p-2 rounded-xl shadow-lg shadow-brand-600/30">
-                    <i class="fa-solid me-0 fa-chart-line text-xl"></i>
+    <!-- Top Navigation Bar -->
+    <header class="bg-dark-800 border-b border-gray-800 sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="bg-gradient-to-tr from-blue-600 to-indigo-500 p-2.5 rounded-xl shadow-lg shadow-blue-500/20">
+                    <i class="fa-solid fa-chart-line text-white text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="font-bold text-lg leading-tight tracking-wide text-white">TradeLog<span class="text-brand-500">Pro</span></h1>
-                    <p class="text-xs text-slate-400">Jurnal Trading Multi-Akun</p>
+                    <h1 class="font-bold text-lg leading-none tracking-wide text-white">TradeLog<span class="text-blue-500">.Pro</span></h1>
+                    <p class="text-xs text-gray-400 mt-0.5">Jurnal & Analisis Trading</p>
                 </div>
             </div>
 
-            <!-- Account Selector & Quick Actions -->
-            <div class="flex items-center space-x-3">
-                <!-- Dropdown Pilih Akun Trade -->
-                <div class="relative">
-                    <div class="flex items-center bg-slate-800 border border-slate-700 rounded-lg p-1">
-                        <span class="pl-2 pr-1 text-slate-400 text-xs hidden sm:inline"><i class="fa-solid fa-wallet mr-1"></i> Akun:</span>
-                        <select id="accountSelect" onchange="switchAccount(this.value)" class="bg-slate-800 text-white text-sm font-semibold rounded-md px-2 py-1.5 focus:outline-none cursor-pointer border-none">
-                            <!-- Populated via JS -->
-                        </select>
-                        <button onclick="openAccountModal()" title="Kelola / Tambah Akun" class="ml-1 p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded-md transition">
-                            <i class="fa-solid fa-gear"></i>
-                        </button>
-                    </div>
+            <!-- Action Buttons & User Menu -->
+            <div class="flex items-center gap-3">
+                <div id="cloudStatus" class="hidden sm:flex items-center">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                        <i class="fa-solid fa-spinner fa-spin text-xs"></i> Connecting...
+                    </span>
                 </div>
 
-                <!-- Tombol Tambah Trade -->
-                <button onclick="openTradeModal()" class="bg-brand-600 hover:bg-brand-500 text-white font-medium text-sm px-4 py-2 rounded-lg transition flex items-center space-x-2 shadow-lg shadow-brand-600/20">
+                <!-- User Auth Profile Button -->
+                <div id="userProfileArea">
+                    <button id="authModalBtn" onclick="openModal('authModal')" class="bg-dark-700 hover:bg-gray-700 text-gray-200 px-3 py-1.5 rounded-xl text-xs font-medium flex items-center gap-2 border border-gray-700 transition">
+                        <i class="fa-solid fa-user-circle text-sm text-blue-400"></i>
+                        <span id="userStatusText">Masuk / Daftar</span>
+                    </button>
+                </div>
+
+                <button onclick="openModal('addModal')" class="bg-blue-600 hover:bg-blue-500 text-white px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2 transition-all shadow-lg shadow-blue-600/30 active:scale-95">
                     <i class="fa-solid fa-plus"></i>
                     <span class="hidden sm:inline">Tambah Trade</span>
                 </button>
-
-                <!-- Menu Ekspor/Impor Data -->
-                <div class="relative">
-                    <button onclick="toggleDataMenu()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 p-2.5 rounded-lg border border-slate-700 transition">
-                        <i class="fa-solid fa-ellipsis-vertical"></i>
-                    </button>
-                    <div id="dataMenu" class="hidden absolute right-0 mt-2 w-48 bg-slate-900 border border-slate-800 rounded-xl shadow-xl py-2 z-50 text-sm">
-                        <button onclick="exportDataJSON()" class="w-full text-left px-4 py-2 hover:bg-slate-800 text-slate-300 flex items-center"><i class="fa-solid fa-file-export w-5 text-brand-500"></i> Ekspor JSON</button>
-                        <button onclick="exportDataCSV()" class="w-full text-left px-4 py-2 hover:bg-slate-800 text-slate-300 flex items-center"><i class="fa-solid fa-file-csv w-5 text-emerald-500"></i> Ekspor CSV</button>
-                        <label class="w-full text-left px-4 py-2 hover:bg-slate-800 text-slate-300 flex items-center cursor-pointer">
-                            <i class="fa-solid fa-file-import w-5 text-amber-500"></i> Impor JSON
-                            <input type="file" id="importFileInput" accept=".json" onchange="importDataJSON(event)" class="hidden">
-                        </label>
-                    </div>
-                </div>
-
-                <!-- User Profile / Login Button -->
-                <div id="userAuthContainer" class="relative">
-                    <button id="authBtn" onclick="openLoginModal()" class="bg-brand-600/20 hover:bg-brand-600/30 text-brand-400 border border-brand-500/30 px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-2">
-                        <i class="fa-solid fa-user-circle text-base"></i>
-                        <span id="userStatusText">Masuk / Login</span>
-                    </button>
-                    <!-- User Dropdown Menu (Logged in state) -->
-                    <div id="userMenu" class="hidden absolute right-0 mt-2 w-56 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl p-3 z-50 text-xs space-y-2">
-                        <div class="border-b border-slate-800 pb-2">
-                            <p class="text-slate-400 text-[10px] uppercase font-bold tracking-wider">Status Akun Trader</p>
-                            <p id="loggedInUserEmail" class="text-white font-semibold truncate mt-0.5">user@trader.com</p>
-                            <p id="loggedInUserId" class="text-[10px] text-brand-400 font-mono truncate">ID: Guest-12345</p>
-                        </div>
-                        <button onclick="handleLogout()" class="w-full text-left px-2 py-1.5 hover:bg-rose-500/10 text-rose-400 hover:text-rose-300 rounded-lg transition flex items-center space-x-2">
-                            <i class="fa-solid fa-right-from-bracket"></i>
-                            <span>Keluar / Logout</span>
-                        </button>
-                    </div>
-                </div>
+                <div class="h-6 w-px bg-gray-700 hidden sm:block"></div>
+                <button onclick="exportData()" title="Export Backup Data" class="p-2 text-gray-400 hover:text-white bg-dark-700 hover:bg-gray-700 rounded-xl transition">
+                    <i class="fa-solid fa-download"></i>
+                </button>
+                <button onclick="document.getElementById('importInput').click()" title="Import Data" class="p-2 text-gray-400 hover:text-white bg-dark-700 hover:bg-gray-700 rounded-xl transition">
+                    <i class="fa-solid fa-upload"></i>
+                </button>
+                <input type="file" id="importInput" class="hidden" accept=".json" onchange="importData(event)">
             </div>
-
         </div>
     </header>
 
-    <!-- Content Container -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 flex-grow w-full">
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
-        <!-- Banner Info Akun Aktif & Modal Awal -->
-        <div class="bg-gradient-to-r from-slate-900 via-slate-850 to-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xl">
-            <div class="flex items-center space-x-4">
-                <div class="p-3 bg-brand-500/10 text-brand-400 border border-brand-500/20 rounded-xl">
-                    <i class="fa-solid fa-building-columns text-2xl"></i>
+        <!-- Navigation Tabs -->
+        <div class="flex border-b border-gray-800 gap-2 sm:gap-6 text-sm font-medium overflow-x-auto pb-1">
+            <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn px-4 py-2 border-b-2 border-blue-500 text-blue-500 flex items-center gap-2 whitespace-nowrap">
+                <i class="fa-solid fa-gauge-high"></i> Ringkasan & Dashboard
+            </button>
+            <button onclick="switchTab('journal')" id="tab-journal" class="tab-btn px-4 py-2 border-b-2 border-transparent text-gray-400 hover:text-gray-200 flex items-center gap-2 whitespace-nowrap">
+                <i class="fa-solid fa-list-check"></i> Jurnal Trade
+            </button>
+            <button onclick="switchTab('analytics')" id="tab-analytics" class="tab-btn px-4 py-2 border-b-2 border-transparent text-gray-400 hover:text-gray-200 flex items-center gap-2 whitespace-nowrap">
+                <i class="fa-solid fa-chart-pie"></i> Analisis Strategi & Psikologi
+            </button>
+            <button onclick="switchTab('calculator')" id="tab-calculator" class="tab-btn px-4 py-2 border-b-2 border-transparent text-gray-400 hover:text-gray-200 flex items-center gap-2 whitespace-nowrap">
+                <i class="fa-solid fa-calculator"></i> Risk Calculator
+            </button>
+        </div>
+
+        <!-- Notification Toast Box -->
+        <div id="toast" class="hidden fixed bottom-5 right-5 z-50 bg-dark-700 border border-gray-600 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 transition-all duration-300">
+            <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400 text-lg"></i>
+            <span id="toastMsg" class="text-sm">Notifikasi</span>
+        </div>
+
+        <!-- ================= TAB 1: DASHBOARD ================= -->
+        <section id="view-dashboard" class="space-y-6">
+            <!-- Key Metric Cards -->
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                <div class="bg-dark-800 p-4 rounded-2xl border border-gray-800/80 shadow-sm hover:border-gray-700 transition">
+                    <p class="text-xs text-gray-400 font-medium mb-1">Total P&L</p>
+                    <h3 id="stat-pnl" class="text-xl font-bold text-gray-100">$0.00</h3>
+                    <span id="stat-pnl-pct" class="text-xs px-2 py-0.5 rounded-full bg-gray-800 text-gray-400 font-medium inline-block mt-2">+0.0%</span>
                 </div>
-                <div>
-                    <div class="flex items-center space-x-2">
-                        <h2 id="currentAccountTitle" class="text-xl font-bold text-white">Akun Real FXCM</h2>
-                        <span id="currentAccountBadge" class="bg-brand-500/20 text-brand-400 text-xs px-2.5 py-0.5 rounded-full border border-brand-500/30">Aktif</span>
+                <div class="bg-dark-800 p-4 rounded-2xl border border-gray-800/80 shadow-sm hover:border-gray-700 transition">
+                    <p class="text-xs text-gray-400 font-medium mb-1">Win Rate</p>
+                    <h3 id="stat-winrate" class="text-xl font-bold text-blue-400">0.0%</h3>
+                    <p class="text-xs text-gray-500 mt-2"><span id="stat-wins">0</span>W / <span id="stat-losses">0</span>L</p>
+                </div>
+                <div class="bg-dark-800 p-4 rounded-2xl border border-gray-800/80 shadow-sm hover:border-gray-700 transition">
+                    <p class="text-xs text-gray-400 font-medium mb-1">Profit Factor</p>
+                    <h3 id="stat-pf" class="text-xl font-bold text-gray-100">0.00</h3>
+                    <p class="text-xs text-gray-500 mt-2">Gross Profit / Loss</p>
+                </div>
+                <div class="bg-dark-800 p-4 rounded-2xl border border-gray-800/80 shadow-sm hover:border-gray-700 transition">
+                    <p class="text-xs text-gray-400 font-medium mb-1">Total Eksekusi</p>
+                    <h3 id="stat-trades" class="text-xl font-bold text-gray-100">0</h3>
+                    <p class="text-xs text-gray-500 mt-2">Trades terdaftar</p>
+                </div>
+                <div class="bg-dark-800 p-4 rounded-2xl border border-gray-800/80 shadow-sm hover:border-gray-700 transition">
+                    <p class="text-xs text-gray-400 font-medium mb-1">Best Trade</p>
+                    <h3 id="stat-best" class="text-xl font-bold text-emerald-400">$0.00</h3>
+                    <p class="text-xs text-gray-500 mt-2">Kemenangan Terbesar</p>
+                </div>
+                <div class="bg-dark-800 p-4 rounded-2xl border border-gray-800/80 shadow-sm hover:border-gray-700 transition">
+                    <p class="text-xs text-gray-400 font-medium mb-1">Worst Trade</p>
+                    <h3 id="stat-worst" class="text-xl font-bold text-rose-400">$0.00</h3>
+                    <p class="text-xs text-gray-500 mt-2">Kerugian Terbesar</p>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Equity Curve Chart -->
+                <div class="lg:col-span-2 bg-dark-800 p-5 rounded-2xl border border-gray-800 flex flex-col justify-between">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <h2 class="font-bold text-gray-200">Kurva Ekuitas (Cumulative P&L)</h2>
+                            <p class="text-xs text-gray-400">Pertumbuhan saldo akun trading kamu</p>
+                        </div>
+                        <span class="text-xs text-gray-400 bg-dark-700 px-3 py-1 rounded-lg">Real-time Data</span>
                     </div>
-                    <p id="currentAccountDesc" class="text-xs text-slate-400 mt-0.5">Jurnal pencatatan transaksi untuk strategi utama</p>
+                    <div class="relative w-full h-72">
+                        <canvas id="equityChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Win/Loss Ratio Chart & Summary -->
+                <div class="bg-dark-800 p-5 rounded-2xl border border-gray-800 flex flex-col justify-between">
+                    <div class="mb-2">
+                        <h2 class="font-bold text-gray-200">Distribusi Hasil</h2>
+                        <p class="text-xs text-gray-400">Perbandingan Menang, Kalah & BEP</p>
+                    </div>
+                    <div class="relative w-full h-56 flex items-center justify-center">
+                        <canvas id="winLossChart"></canvas>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 text-center mt-4 pt-3 border-t border-gray-800 text-xs">
+                        <div>
+                            <span class="text-emerald-400 font-bold block" id="donutWin">0</span>
+                            <span class="text-gray-400">Win</span>
+                        </div>
+                        <div>
+                            <span class="text-rose-400 font-bold block" id="donutLoss">0</span>
+                            <span class="text-gray-400">Loss</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-300 font-bold block" id="donutBep">0</span>
+                            <span class="text-gray-400">BEP</span>
+                        </div>
+                    </div>
                 </div>
             </div>
+        </section>
 
-            <!-- Tombol Edit Modal Awal & Stat Ringkas -->
-            <div class="flex items-center space-x-4 w-full md:w-auto justify-between md:justify-end border-t md:border-t-0 border-slate-800 pt-3 md:pt-0">
-                <div class="text-left md:text-right">
-                    <span class="text-xs text-slate-400 block">Modal Awal (Initial Capital)</span>
-                    <span id="displayModalAwal" class="text-lg font-bold text-amber-400">$10,000.00</span>
-                </div>
-                <button onclick="openEditModalAwal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center space-x-1.5">
-                    <i class="fa-solid fa-pen-to-square"></i>
-                    <span>Ubah Modal</span>
-                </button>
-            </div>
-        </div>
-
-        <!-- Metric Dashboard Cards -->
-        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            
-            <!-- Saldo Akhir -->
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between">
-                <div class="flex justify-between items-center mb-2">
-                    <span class="text-xs font-medium text-slate-400">Total Saldo</span>
-                    <i class="fa-solid fa-wallet text-brand-500 text-xs"></i>
-                </div>
-                <div>
-                    <h3 id="metricCurrentBalance" class="text-xl font-extrabold text-white">$10,000.00</h3>
-                    <p id="metricReturnGrowth" class="text-xs text-slate-500 mt-1">Growth: <span class="text-slate-400 font-semibold">0.00%</span></p>
-                </div>
-            </div>
-
-            <!-- Total PnL ($) -->
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between">
-                <div class="flex justify-between items-center mb-2">
-                    <span class="text-xs font-medium text-slate-400">Total PnL ($)</span>
-                    <i class="fa-solid fa-dollar-sign text-emerald-500 text-xs"></i>
-                </div>
-                <div>
-                    <h3 id="metricTotalPnLVal" class="text-xl font-extrabold text-slate-200">$0.00</h3>
-                    <p id="metricTotalPnLPct" class="text-xs text-slate-400 mt-1">0.00% dari Modal</p>
-                </div>
-            </div>
-
-            <!-- Win Rate -->
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between">
-                <div class="flex justify-between items-center mb-2">
-                    <span class="text-xs font-medium text-slate-400">Win Rate</span>
-                    <i class="fa-solid fa-trophy text-amber-500 text-xs"></i>
-                </div>
-                <div>
-                    <h3 id="metricWinRate" class="text-xl font-extrabold text-white">0%</h3>
-                    <p id="metricWinLossRatio" class="text-xs text-slate-400 mt-1">0 Win / 0 Loss</p>
-                </div>
-            </div>
-
-            <!-- Total Trades -->
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between">
-                <div class="flex justify-between items-center mb-2">
-                    <span class="text-xs font-medium text-slate-400">Total Posisi</span>
-                    <i class="fa-solid fa-list-check text-indigo-500 text-xs"></i>
-                </div>
-                <div>
-                    <h3 id="metricTotalTrades" class="text-xl font-extrabold text-white">0</h3>
-                    <p id="metricOpenTrades" class="text-xs text-slate-400 mt-1">0 Posisi Open</p>
-                </div>
-            </div>
-
-            <!-- Profit Factor / Avg Win -->
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between col-span-2 lg:col-span-1">
-                <div class="flex justify-between items-center mb-2">
-                    <span class="text-xs font-medium text-slate-400">Profit Factor</span>
-                    <i class="fa-solid fa-chart-pie text-cyan-500 text-xs"></i>
-                </div>
-                <div>
-                    <h3 id="metricProfitFactor" class="text-xl font-extrabold text-white">0.00</h3>
-                    <p id="metricAvgWinLoss" class="text-xs text-slate-400 mt-1">Avg Win/Loss: $0/$0</p>
-                </div>
-            </div>
-
-        </div>
-
-        <!-- Equity Curve Chart -->
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
-            <div class="flex items-center justify-between mb-4">
-                <div>
-                    <h3 class="font-bold text-white text-base">Grafik Pertumbuhan Equity</h3>
-                    <p class="text-xs text-slate-400">Perkembangan saldo akun dari waktu ke waktu</p>
-                </div>
-                <span class="text-xs bg-slate-800 border border-slate-700 text-slate-300 px-3 py-1 rounded-full"><i class="fa-solid fa-chart-line text-brand-500 mr-1"></i> Real-time</span>
-            </div>
-            <div class="h-64 w-full">
-                <canvas id="equityChart"></canvas>
-            </div>
-        </div>
-
-        <!-- Filter & Search Section -->
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-4">
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
-                
-                <!-- Search Pair -->
-                <div class="relative flex-1">
-                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-500 text-sm"></i>
-                    <input type="text" id="searchPairInput" onkeyup="filterTrades()" placeholder="Cari Pair (misal: XAUUSD, BTCUSDT)..." class="w-full bg-slate-850 border border-slate-700 text-white text-sm rounded-xl pl-9 pr-4 py-2 focus:outline-none focus:border-brand-500 transition">
-                </div>
-
-                <!-- Filter Controls -->
-                <div class="flex flex-wrap items-center gap-2">
-                    <!-- Status Filter -->
-                    <select id="filterStatus" onchange="filterTrades()" class="bg-slate-850 border border-slate-700 text-slate-300 text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-brand-500">
-                        <option value="ALL">Semua Status</option>
-                        <option value="WIN">Win</option>
-                        <option value="LOSS">Loss</option>
-                        <option value="BE">Break Even</option>
-                        <option value="OPEN">Open</option>
+        <!-- ================= TAB 2: TRADE JOURNAL ================= -->
+        <section id="view-journal" class="hidden space-y-4">
+            <!-- Filter & Search Controls -->
+            <div class="bg-dark-800 p-4 rounded-2xl border border-gray-800 flex flex-wrap gap-3 items-center justify-between">
+                <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                    <!-- Search Input -->
+                    <div class="relative flex-1 sm:w-64">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm"></i>
+                        <input type="text" id="searchInput" oninput="renderTrades()" placeholder="Cari Pair / Notes..." class="w-full bg-dark-900 border border-gray-700 rounded-xl pl-9 pr-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-blue-500">
+                    </div>
+                    <!-- Filter Pair -->
+                    <select id="filterPair" onchange="renderTrades()" class="bg-dark-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-300 focus:outline-none focus:border-blue-500">
+                        <option value="ALL">Semua Pair</option>
                     </select>
-
-                    <!-- Strategy Filter -->
-                    <select id="filterStrategy" onchange="filterTrades()" class="bg-slate-850 border border-slate-700 text-slate-300 text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-brand-500">
+                    <!-- Filter Setup -->
+                    <select id="filterSetup" onchange="renderTrades()" class="bg-dark-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-300 focus:outline-none focus:border-blue-500">
                         <option value="ALL">Semua Strategi</option>
-                        <!-- Populated via JS -->
                     </select>
+                </div>
 
-                    <!-- Reset Filter -->
-                    <button onclick="resetFilters()" class="bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white border border-slate-700 px-3 py-2 rounded-xl text-xs transition">
-                        <i class="fa-solid fa-rotate-left mr-1"></i> Reset
-                    </button>
+                <div class="text-xs text-gray-400">
+                    Menampilkan <span id="filteredCount" class="font-bold text-gray-200">0</span> trade
                 </div>
             </div>
 
-            <!-- Table Jurnal Trade -->
-            <div class="overflow-x-auto custom-scrollbar border border-slate-800 rounded-xl">
-                <table class="w-full text-left text-sm text-slate-300">
-                    <thead class="bg-slate-850 text-xs uppercase text-slate-400 font-semibold border-b border-slate-800">
-                        <tr>
-                            <th class="py-3 px-4">Tgl / Akun</th>
-                            <th class="py-3 px-4">Pair</th>
-                            <th class="py-3 px-4">Type</th>
-                            <th class="py-3 px-4">Lot</th>
-                            <th class="py-3 px-4">Entry / Exit</th>
-                            <th class="py-3 px-4">TP / SL</th>
-                            <th class="py-3 px-4">PnL (%)</th>
-                            <th class="py-3 px-4">PnL ($)</th>
-                            <th class="py-3 px-4">Status</th>
-                            <th class="py-3 px-4">Strategy</th>
-                            <th class="py-3 px-4 text-center">Screen</th>
-                            <th class="py-3 px-4 text-center">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tradesTableBody" class="divide-y divide-slate-800/60">
-                        <!-- Populated via JS -->
-                    </tbody>
-                </table>
+            <!-- Table Container -->
+            <div class="bg-dark-800 rounded-2xl border border-gray-800 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-gray-300">
+                        <thead class="bg-dark-700/60 text-gray-400 text-xs uppercase tracking-wider border-b border-gray-800">
+                            <tr>
+                                <th class="py-3.5 px-4">Tanggal</th>
+                                <th class="py-3.5 px-4">Pair</th>
+                                <th class="py-3.5 px-4">Tipe</th>
+                                <th class="py-3.5 px-4">Entry / Exit</th>
+                                <th class="py-3.5 px-4">Posisi / Lot</th>
+                                <th class="py-3.5 px-4">R:R Ratio</th>
+                                <th class="py-3.5 px-4">P&L ($)</th>
+                                <th class="py-3.5 px-4">Strategi</th>
+                                <th class="py-3.5 px-4">Emosi</th>
+                                <th class="py-3.5 px-4 text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tradeTableBody" class="divide-y divide-gray-800">
+                            <!-- Trade Rows rendered via JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Empty State -->
+                <div id="emptyState" class="hidden text-center py-12">
+                    <i class="fa-regular fa-folder-open text-4xl text-gray-600 mb-3 block"></i>
+                    <p class="text-gray-400 text-sm">Belum ada data jurnal trading yang tercatat.</p>
+                    <button onclick="openModal('addModal')" class="mt-3 text-xs text-blue-400 hover:underline">Tambah data pertama sekarang</button>
+                </div>
             </div>
-            
-            <div id="emptyState" class="hidden text-center py-10 space-y-3">
-                <i class="fa-solid fa-folder-open text-4xl text-slate-600"></i>
-                <p class="text-slate-400 text-sm">Tidak ada transaksi yang cocok dengan filter atau belum ada trade tercatat.</p>
+        </section>
+
+        <!-- ================= TAB 3: ANALYTICS ================= -->
+        <section id="view-analytics" class="hidden space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Strategy Performance Chart -->
+                <div class="bg-dark-800 p-5 rounded-2xl border border-gray-800">
+                    <h3 class="font-bold text-gray-200 mb-1">Performa Berdasarkan Strategi</h3>
+                    <p class="text-xs text-gray-400 mb-4">Total P&L ($) berdasarkan setup yang digunakan</p>
+                    <div class="relative w-full h-64">
+                        <canvas id="strategyChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Emotion Impact Chart -->
+                <div class="bg-dark-800 p-5 rounded-2xl border border-gray-800">
+                    <h3 class="font-bold text-gray-200 mb-1">Dampak Psikologi & Emosi</h3>
+                    <p class="text-xs text-gray-400 mb-4">Win Rate (%) berdasarkan kondisi psikologi</p>
+                    <div class="relative w-full h-64">
+                        <canvas id="emotionChart"></canvas>
+                    </div>
+                </div>
             </div>
-        </div>
+        </section>
 
-    </main>
-
-    <!-- Footer -->
-    <footer class="bg-slate-900 border-t border-slate-800 py-4 text-center text-xs text-slate-500 mt-auto">
-        TradeLogPro &copy; 2026. Kelola disiplin & risiko trading Anda dengan jurnal multi-akun.
-    </footer>
-
-    <!-- ================= MODAL SECTION ================= -->
-
-    <!-- 1. MODAL TAMBAH / EDIT TRADE (13 ITEMS EXACTLY) -->
-    <div id="tradeModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl my-8">
-            <div class="bg-slate-850 border-b border-slate-800 p-4 flex items-center justify-between">
-                <h3 id="modalTitle" class="font-bold text-white text-base">Tambah Trade Baru</h3>
-                <button onclick="closeTradeModal()" class="text-slate-400 hover:text-white p-1 rounded-lg"><i class="fa-solid fa-xmark text-lg"></i></button>
-            </div>
-            
-            <form id="tradeForm" onsubmit="saveTrade(event)" class="p-5 space-y-4 max-h-[80vh] overflow-y-auto custom-scrollbar">
-                <input type="hidden" id="tradeId">
-
-                <!-- Target Account Select -->
+        <!-- ================= TAB 4: RISK CALCULATOR ================= -->
+        <section id="view-calculator" class="hidden">
+            <div class="max-w-2xl mx-auto bg-dark-800 p-6 rounded-2xl border border-gray-800 space-y-6">
                 <div>
-                    <label class="block text-xs font-semibold text-slate-300 mb-1">Simpan ke Akun Trade</label>
-                    <select id="formAccountSelect" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
-                        <!-- Populated via JS -->
-                    </select>
+                    <h2 class="text-lg font-bold text-gray-100">Kalkulator Posisi Trading (Position Sizing)</h2>
+                    <p class="text-xs text-gray-400">Hitung berapa lot/unit risiko aman sesuai modal akun kamu.</p>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <!-- 1. Pair -->
                     <div>
-                        <label class="block text-xs font-semibold text-slate-300 mb-1">1. Pair / Simbol *</label>
-                        <input type="text" id="fieldPair" required placeholder="XAUUSD, EURUSD, BTCUSDT" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white uppercase focus:outline-none focus:border-brand-500">
+                        <label class="block text-xs font-medium text-gray-400 mb-1">Ukuran Modal ($)</label>
+                        <input type="number" id="calcAccount" value="10000" oninput="calculateRisk()" class="w-full bg-dark-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-400 mb-1">Toleransi Risiko (%)</label>
+                        <input type="number" id="calcRiskPct" value="1" step="0.1" oninput="calculateRisk()" class="w-full bg-dark-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-400 mb-1">Harga Entry ($)</label>
+                        <input type="number" id="calcEntry" value="2000" step="any" oninput="calculateRisk()" class="w-full bg-dark-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-400 mb-1">Harga Stop Loss ($)</label>
+                        <input type="number" id="calcSL" value="1990" step="any" oninput="calculateRisk()" class="w-full bg-dark-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-blue-500">
+                    </div>
+                </div>
+
+                <!-- Calculator Results Output -->
+                <div class="bg-dark-900 p-4 rounded-xl border border-gray-700/60 grid grid-cols-2 sm:grid-cols-3 gap-4 text-center">
+                    <div>
+                        <span class="text-xs text-gray-400 block">Jumlah Uang Dipertaruhkan</span>
+                        <span id="calcRiskAmount" class="text-lg font-bold text-rose-400">$100.00</span>
+                    </div>
+                    <div>
+                        <span class="text-xs text-gray-400 block">Jarak Stop Loss</span>
+                        <span id="calcDistance" class="text-lg font-bold text-gray-200">10.00 pts</span>
+                    </div>
+                    <div class="col-span-2 sm:col-span-1">
+                        <span class="text-xs text-gray-400 block">Rekomendasi Posisi / Lot</span>
+                        <span id="calcUnits" class="text-lg font-bold text-blue-400">10 Units</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Modal Login / Register / Google Auth -->
+    <div id="authModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm overflow-y-auto">
+        <div class="bg-dark-800 border border-gray-700 rounded-2xl w-full max-w-md p-6 shadow-2xl relative">
+            <div class="flex justify-between items-center mb-5 border-b border-gray-700 pb-3">
+                <h3 id="authModalTitle" class="text-lg font-bold text-gray-100">Akun Cloud Sync</h3>
+                <button onclick="closeModal('authModal')" class="text-gray-400 hover:text-white p-1 rounded-lg">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Logged In View -->
+            <div id="authLoggedInView" class="hidden space-y-4 text-center">
+                <div class="w-16 h-16 bg-blue-600/20 text-blue-400 rounded-full flex items-center justify-center mx-auto text-2xl border border-blue-500/30">
+                    <i class="fa-solid fa-user-check"></i>
+                </div>
+                <div>
+                    <h4 class="font-bold text-gray-100 text-base" id="userDisplayName">User Email</h4>
+                    <p class="text-xs text-gray-400 mt-1">Data jurnal terhubung secara real-time dengan Firebase Cloud.</p>
+                </div>
+                <div class="pt-3 border-t border-gray-700/60 flex gap-3">
+                    <button onclick="closeModal('authModal')" class="flex-1 py-2 bg-dark-700 hover:bg-gray-700 text-gray-300 rounded-xl text-xs font-semibold transition">Tutup</button>
+                    <button id="logoutBtn" class="flex-1 py-2 bg-rose-600/20 hover:bg-rose-600/30 text-rose-400 border border-rose-500/30 rounded-xl text-xs font-semibold transition">Keluar (Logout)</button>
+                </div>
+            </div>
+
+            <!-- Logged Out / Sign In View -->
+            <div id="authLoggedOutView" class="space-y-4">
+                <!-- Google Sign In Button -->
+                <button id="googleSignInBtn" class="w-full bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2.5 px-4 rounded-xl text-sm flex items-center justify-center gap-3 shadow-md transition active:scale-95">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+                        <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.24v3.15C3.26 21.39 7.33 24 12 24z"/>
+                        <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.24C.45 8.15 0 9.97 0 12s.45 3.85 1.24 5.42l4.04-3.15z"/>
+                        <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.61 1.24 6.58l4.04 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+                    </svg>
+                    Lanjut dengan Google
+                </button>
+
+                <div class="relative flex py-1 items-center">
+                    <div class="flex-grow border-t border-gray-700"></div>
+                    <span class="flex-shrink mx-3 text-xs text-gray-500 uppercase font-medium">Atau Email</span>
+                    <div class="flex-grow border-t border-gray-700"></div>
+                </div>
+
+                <!-- Auth Mode Selector (Masuk / Daftar) -->
+                <div class="flex bg-dark-900 p-1 rounded-xl border border-gray-700">
+                    <button type="button" id="authModeLogin" class="flex-1 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white transition">Masuk</button>
+                    <button type="button" id="authModeRegister" class="flex-1 py-1.5 text-xs font-semibold rounded-lg text-gray-400 hover:text-white transition">Daftar Baru</button>
+                </div>
+
+                <form id="emailAuthForm" class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-400 mb-1">Email</label>
+                        <input type="email" id="authEmail" required placeholder="trader@pro.com" class="w-full bg-dark-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-400 mb-1">Password</label>
+                        <input type="password" id="authPassword" required minlength="6" placeholder="••••••••" class="w-full bg-dark-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-blue-500">
                     </div>
 
-                    <!-- 2. Buy / Sell -->
+                    <div id="authErrorMsg" class="hidden text-xs text-rose-400 bg-rose-500/10 p-2.5 rounded-lg border border-rose-500/20"></div>
+
+                    <button type="submit" id="authSubmitBtn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2.5 rounded-xl text-sm shadow-lg shadow-blue-600/30 transition">
+                        Masuk ke Akun
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Form Tambah/Edit Trade -->
+    <div id="addModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm overflow-y-auto">
+        <div class="bg-dark-800 border border-gray-700 rounded-2xl w-full max-w-xl p-6 shadow-2xl relative my-8">
+            <div class="flex justify-between items-center mb-5 border-b border-gray-700 pb-3">
+                <h3 id="modalTitle" class="text-lg font-bold text-gray-100">Tambah Jurnal Trading Baru</h3>
+                <button onclick="closeModal('addModal')" class="text-gray-400 hover:text-white p-1 rounded-lg">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <form id="tradeForm" onsubmit="handleFormSubmit(event)" class="space-y-4">
+                <input type="hidden" id="tradeId">
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-semibold text-slate-300 mb-1">2. Buy / Sell *</label>
-                        <select id="fieldBuySell" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
-                            <option value="BUY">BUY</option>
-                            <option value="SELL">SELL</option>
+                        <label class="block text-xs font-medium text-gray-400 mb-1">Tanggal & Waktu</label>
+                        <input type="datetime-local" id="fieldDate" required class="w-full bg-dark-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-400 mb-1">Pair / Aset (Misal: BTC/USDT, XAU/USD)</label>
+                        <input type="text" id="fieldPair" placeholder="XAU/USD" required class="w-full bg-dark-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-200 uppercase focus:outline-none focus:border-blue-500">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-400 mb-1">Arah Transaksi</label>
+                        <select id="fieldType" class="w-full bg-dark-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-blue-500">
+                            <option value="LONG">BUY / LONG</option>
+                            <option value="SHORT">SELL / SHORT</option>
                         </select>
                     </div>
-
-                    <!-- 3. Lot -->
                     <div>
-                        <label class="block text-xs font-semibold text-slate-300 mb-1">3. Lot Size *</label>
-                        <input type="number" step="0.01" min="0.01" id="fieldLot" required placeholder="0.10" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
+                        <label class="block text-xs font-medium text-gray-400 mb-1">Ukuran Posisi / Lot</label>
+                        <input type="number" id="fieldSize" step="any" placeholder="1.0" required class="w-full bg-dark-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-blue-500">
                     </div>
+                </div>
 
-                    <!-- 4. Harga Entry -->
+                <!-- Price Inputs & Auto Calculation -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-dark-900/60 p-3 rounded-xl border border-gray-800">
                     <div>
-                        <label class="block text-xs font-semibold text-slate-300 mb-1">4. Harga Entry *</label>
-                        <input type="number" step="any" id="fieldHargaEntry" required placeholder="2000.50" oninput="calculateEstimates()" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
+                        <label class="block text-xs font-medium text-gray-400 mb-1">Entry Price ($)</label>
+                        <input type="number" id="fieldEntry" step="any" placeholder="2000" oninput="autoCalcPnL()" required class="w-full bg-dark-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-blue-500">
                     </div>
-
-                    <!-- 5. Harga Exit -->
                     <div>
-                        <label class="block text-xs font-semibold text-slate-300 mb-1">5. Harga Exit</label>
-                        <input type="number" step="any" id="fieldHargaExit" placeholder="2010.00" oninput="calculateEstimates()" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
+                        <label class="block text-xs font-medium text-gray-400 mb-1">Exit Price ($)</label>
+                        <input type="number" id="fieldExit" step="any" placeholder="2020" oninput="autoCalcPnL()" required class="w-full bg-dark-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-blue-500">
                     </div>
-
-                    <!-- 6. Take Profit (TP) -->
                     <div>
-                        <label class="block text-xs font-semibold text-slate-300 mb-1">6. Take Profit (TP)</label>
-                        <input type="number" step="any" id="fieldTP" placeholder="2020.00" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
+                        <label class="block text-xs font-medium text-gray-400 mb-1">Stop Loss ($)</label>
+                        <input type="number" id="fieldSL" step="any" placeholder="1990" oninput="autoCalcPnL()" class="w-full bg-dark-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-blue-500">
                     </div>
+                </div>
 
-                    <!-- 7. Stop Loss (SL) -->
+                <!-- Auto Calculated Outcome Preview -->
+                <div class="grid grid-cols-2 gap-3 bg-dark-700/30 p-3 rounded-xl border border-gray-700/40 text-xs">
                     <div>
-                        <label class="block text-xs font-semibold text-slate-300 mb-1">7. Stop Loss (SL)</label>
-                        <input type="number" step="any" id="fieldSL" placeholder="1990.00" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
+                        <span class="text-gray-400 block">Estimasi P&L:</span>
+                        <span id="previewPnL" class="font-bold text-gray-200 text-sm">$0.00</span>
                     </div>
-
-                    <!-- 8. Estimasi PnL (%) -->
                     <div>
-                        <label class="block text-xs font-semibold text-slate-300 mb-1">8. Estimasi PnL (%)</label>
-                        <input type="number" step="0.01" id="fieldPnLPct" placeholder="2.5" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
+                        <span class="text-gray-400 block">Risk Reward Ratio:</span>
+                        <span id="previewRR" class="font-bold text-gray-200 text-sm">1 : 0.00</span>
                     </div>
+                </div>
 
-                    <!-- 9. Estimasi PnL ($) -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-semibold text-slate-300 mb-1">9. Estimasi PnL ($)</label>
-                        <input type="number" step="0.01" id="fieldPnLVal" placeholder="250.00" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
+                        <label class="block text-xs font-medium text-gray-400 mb-1">Strategi / Setup</label>
+                        <input type="text" id="fieldSetup" placeholder="SMC / Breakout / Scalping" class="w-full bg-dark-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-blue-500">
                     </div>
-
-                    <!-- 10. Status Trade -->
                     <div>
-                        <label class="block text-xs font-semibold text-slate-300 mb-1">10. Status Trade *</label>
-                        <select id="fieldStatus" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
-                            <option value="OPEN">OPEN (Sedang Berjalan)</option>
-                            <option value="WIN">WIN (Profit)</option>
-                            <option value="LOSS">LOSS (Rugi)</option>
-                            <option value="BE">BE (Break Even)</option>
+                        <label class="block text-xs font-medium text-gray-400 mb-1">Kondisi Psikologi / Emosi</label>
+                        <select id="fieldEmotion" class="w-full bg-dark-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-blue-500">
+                            <option value="Disciplined">Disciplined (Tenang & Sesuai Plan)</option>
+                            <option value="FOMO">FOMO (Takut Ketinggalan Trend)</option>
+                            <option value="Revenge">Revenge Trade (Emosi Habis Loss)</option>
+                            <option value="Patient">Patient (Sabar Menunggu Pattern)</option>
+                            <option value="Hesitant">Hesitant (Ragu-Ragu saat Eksekusi)</option>
                         </select>
                     </div>
                 </div>
 
-                <!-- 11. Strategy -->
                 <div>
-                    <label class="block text-xs font-semibold text-slate-300 mb-1">11. Strategy / Setup *</label>
-                    <input type="text" id="fieldStrategy" required placeholder="misal: SMC Liquidity Sweep, Breakout Retest, ICT Silver Bullet" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
+                    <label class="block text-xs font-medium text-gray-400 mb-1">Catatan / Evaluasi Trade</label>
+                    <textarea id="fieldNotes" rows="2" placeholder="Alasan entry, kesalahan yang dibuat, atau insight lain..." class="w-full bg-dark-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-blue-500"></textarea>
                 </div>
 
-                <!-- 12. Catatan -->
-                <div>
-                    <label class="block text-xs font-semibold text-slate-300 mb-1">12. Catatan Trade</label>
-                    <textarea id="fieldNotes" rows="3" placeholder="Alasan entry, konfirmasi indikator, kondisi psikologi..." class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500"></textarea>
-                </div>
-
-                <!-- 13. Screenshot -->
-                <div>
-                    <label class="block text-xs font-semibold text-slate-300 mb-1">13. Screenshot URL / Chart Link</label>
-                    <input type="url" id="fieldScreenshot" placeholder="https://www.tradingview.com/x/..." class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
-                </div>
-
-                <div class="flex justify-end space-x-3 pt-4 border-t border-slate-800">
-                    <button type="button" onclick="closeTradeModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-medium rounded-xl transition">Batal</button>
-                    <button type="submit" class="px-5 py-2 bg-brand-600 hover:bg-brand-500 text-white text-sm font-medium rounded-xl transition shadow-lg shadow-brand-600/20">Simpan Trade</button>
+                <div class="flex justify-end gap-3 pt-3 border-t border-gray-700">
+                    <button type="button" onclick="closeModal('addModal')" class="px-4 py-2 rounded-xl text-sm font-medium text-gray-400 hover:bg-dark-700 transition">Batal</button>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-xl text-sm font-semibold shadow-lg shadow-blue-600/30 transition">Simpan Jurnal</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- 2. MODAL KELOLA / TAMBAH AKUN TRADE -->
-    <div id="accountModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
-            <div class="bg-slate-850 border-b border-slate-800 p-4 flex items-center justify-between">
-                <h3 class="font-bold text-white text-base">Kelola Akun Trading / Jurnal</h3>
-                <button onclick="closeAccountModal()" class="text-slate-400 hover:text-white p-1 rounded-lg"><i class="fa-solid fa-xmark text-lg"></i></button>
+    <!-- Custom Delete Confirmation Modal -->
+    <div id="deleteModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+        <div class="bg-dark-800 border border-gray-700 rounded-2xl w-full max-w-sm p-6 shadow-2xl text-center space-y-4">
+            <div class="w-12 h-12 bg-rose-500/10 text-rose-500 rounded-full flex items-center justify-center mx-auto text-xl border border-rose-500/20">
+                <i class="fa-solid fa-trash-can"></i>
             </div>
-            
-            <div class="p-5 space-y-5">
-                <!-- List Existing Accounts -->
-                <div>
-                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Daftar Akun Anda</h4>
-                    <div id="accountListContainer" class="space-y-2 max-h-48 overflow-y-auto custom-scrollbar">
-                        <!-- Populated via JS -->
-                    </div>
-                </div>
-
-                <!-- Form Tambah Akun Baru -->
-                <div class="bg-slate-850 border border-slate-800 rounded-xl p-4 space-y-3">
-                    <h4 class="text-xs font-bold text-brand-400 uppercase tracking-wider"><i class="fa-solid fa-plus-circle mr-1"></i> Tambah Akun Baru</h4>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-300 mb-1">Nama Akun *</label>
-                        <input type="text" id="newAccountName" placeholder="misal: Prop Firm 100k, Binance Spot, Akun Real Forex" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-1.5 text-sm text-white focus:outline-none focus:border-brand-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-300 mb-1">Modal Awal ($) *</label>
-                        <input type="number" step="any" id="newAccountModal" placeholder="10000" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-1.5 text-sm text-white focus:outline-none focus:border-brand-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-300 mb-1">Deskripsi Singkat</label>
-                        <input type="text" id="newAccountDesc" placeholder="misal: Akun Challenge Tahap 1" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-1.5 text-sm text-white focus:outline-none focus:border-brand-500">
-                    </div>
-                    <button onclick="addNewAccount()" class="w-full py-2 bg-brand-600 hover:bg-brand-500 text-white font-medium text-xs rounded-xl transition">
-                        Tambah Akun
-                    </button>
-                </div>
+            <div>
+                <h3 class="text-base font-bold text-gray-100">Hapus Jurnal Trade?</h3>
+                <p class="text-xs text-gray-400 mt-1">Tindakan ini tidak dapat dibatalkan. Data akan dihapus dari Cloud Database.</p>
+            </div>
+            <div class="flex gap-3 justify-center pt-2">
+                <button onclick="closeModal('deleteModal')" class="px-4 py-2 bg-dark-700 hover:bg-gray-700 text-gray-300 rounded-xl text-xs font-medium transition">Batal</button>
+                <button id="confirmDeleteBtn" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-rose-600/30 transition">Hapus Data</button>
             </div>
         </div>
     </div>
 
-    <!-- 3. MODAL EDIT MODAL AWAL AKUN AKTIF -->
-    <div id="modalAwalModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
-            <div class="bg-slate-850 border-b border-slate-800 p-4 flex items-center justify-between">
-                <h3 class="font-bold text-white text-base">Ubah Modal Awal Akun</h3>
-                <button onclick="closeEditModalAwal()" class="text-slate-400 hover:text-white p-1 rounded-lg"><i class="fa-solid fa-xmark text-lg"></i></button>
-            </div>
-            <div class="p-5 space-y-4">
-                <p class="text-xs text-slate-400">Ubah modal awal untuk <span id="modalAwalAccountName" class="text-white font-semibold">Akun</span>. Semua perhitungan pertumbuhan balance akan menyesuaikan modal baru ini.</p>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-300 mb-1">Nominal Modal Awal ($)</label>
-                    <input type="number" step="any" id="editModalAwalInput" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
-                </div>
-                <div class="flex justify-end space-x-2 pt-2">
-                    <button onclick="closeEditModalAwal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium rounded-xl">Batal</button>
-                    <button onclick="saveModalAwal()" class="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white text-xs font-medium rounded-xl">Simpan Perubahan</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 4. MODAL DETAIL TRADE / SCREENSHOT -->
-    <div id="detailModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl">
-            <div class="bg-slate-850 border-b border-slate-800 p-4 flex items-center justify-between">
-                <div class="flex items-center space-x-2">
-                    <span id="detailPairBadge" class="bg-brand-500/20 text-brand-400 font-bold text-sm px-2.5 py-0.5 rounded-lg border border-brand-500/30">XAUUSD</span>
-                    <span id="detailTypeBadge" class="font-bold text-xs px-2 py-0.5 rounded-md">BUY</span>
-                </div>
-                <button onclick="closeDetailModal()" class="text-slate-400 hover:text-white p-1 rounded-lg"><i class="fa-solid fa-xmark text-lg"></i></button>
-            </div>
-            <div class="p-5 space-y-4 max-h-[80vh] overflow-y-auto custom-scrollbar">
-                
-                <!-- Info Grid -->
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-850 p-4 rounded-xl border border-slate-800 text-xs">
-                    <div>
-                        <span class="text-slate-500 block">Lot Size</span>
-                        <span id="detailLot" class="font-bold text-white">0.10</span>
-                    </div>
-                    <div>
-                        <span class="text-slate-500 block">Entry / Exit</span>
-                        <span id="detailPrice" class="font-bold text-white">2000.00 / 2010.00</span>
-                    </div>
-                    <div>
-                        <span class="text-slate-500 block">TP / SL</span>
-                        <span id="detailTPSL" class="font-bold text-white">2020.00 / 1990.00</span>
-                    </div>
-                    <div>
-                        <span class="text-slate-500 block">Hasil PnL</span>
-                        <span id="detailPnL" class="font-bold text-emerald-400">+$250.00 (+2.5%)</span>
-                    </div>
-                </div>
-
-                <!-- Strategi & Catatan -->
-                <div class="space-y-2">
-                    <div class="text-xs">
-                        <span class="text-slate-400 font-semibold">Strategi:</span>
-                        <span id="detailStrategy" class="text-brand-400 font-medium ml-1">SMC Liquidity Sweep</span>
-                    </div>
-                    <div class="bg-slate-850 p-3 rounded-xl border border-slate-800 text-xs text-slate-300">
-                        <span class="text-slate-400 block font-semibold mb-1">Catatan Trade:</span>
-                        <p id="detailNotes" class="whitespace-pre-line text-slate-300">Konfirmasi sweep high asia session, entry di FVG M5.</p>
-                    </div>
-                </div>
-
-                <!-- Screenshot -->
-                <div>
-                    <span class="text-xs text-slate-400 font-semibold block mb-2">Screenshot Setup Chart:</span>
-                    <div id="detailScreenshotContainer" class="bg-slate-950 border border-slate-800 rounded-xl overflow-hidden flex items-center justify-center min-h-[200px]">
-                        <img id="detailScreenshotImg" src="" alt="Trade Screenshot" class="w-full h-auto object-contain max-h-[350px] hidden">
-                        <p id="detailNoScreenshot" class="text-xs text-slate-500">Tidak ada gambar screenshot terlampir.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 5. MODAL LOGIN & REGISTRASI USER -->
-    <div id="loginModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
-            <div class="bg-slate-850 border-b border-slate-800 p-4 flex items-center justify-between">
-                <div class="flex items-center space-x-2">
-                    <div class="bg-brand-600 text-white p-1.5 rounded-lg text-xs">
-                        <i class="fa-solid fa-user-lock"></i>
-                    </div>
-                    <h3 id="loginModalTitle" class="font-bold text-white text-base">Masuk ke TradeLogPro</h3>
-                </div>
-                <button onclick="closeLoginModal()" class="text-slate-400 hover:text-white p-1 rounded-lg"><i class="fa-solid fa-xmark text-lg"></i></button>
-            </div>
-            
-            <div class="p-6 space-y-5">
-                <!-- Toggle Login / Register -->
-                <div class="flex bg-slate-800 p-1 rounded-xl border border-slate-750">
-                    <button id="tabLoginBtn" onclick="switchAuthTab('login')" class="flex-1 py-1.5 text-xs font-semibold rounded-lg bg-brand-600 text-white transition">Masuk (Login)</button>
-                    <button id="tabRegisterBtn" onclick="switchAuthTab('register')" class="flex-1 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition">Daftar Akun</button>
-                </div>
-
-                <!-- Form Login / Register -->
-                <form id="authForm" onsubmit="submitAuthForm(event)" class="space-y-4">
-                    <div id="nameFieldContainer" class="hidden">
-                        <label class="block text-xs font-semibold text-slate-300 mb-1">Nama Trader / Alias</label>
-                        <input type="text" id="authNameInput" placeholder="misal: Alex Trader" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-300 mb-1">Email / Username *</label>
-                        <input type="email" id="authEmailInput" required placeholder="trader@pro.com" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-300 mb-1">Kata Sandi (Password) *</label>
-                        <input type="password" id="authPasswordInput" required placeholder="••••••••" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
-                    </div>
-
-                    <!-- Alert Box Info Login -->
-                    <div id="authAlert" class="hidden text-xs p-3 rounded-xl border"></div>
-
-                    <button type="submit" id="authSubmitBtn" class="w-full py-2.5 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-brand-600/20 transition flex items-center justify-center space-x-2">
-                        <i class="fa-solid fa-right-to-bracket"></i>
-                        <span id="authSubmitText">Masuk Sekarang</span>
-                    </button>
-                </form>
-
-                <div class="relative flex py-1 items-center">
-                    <div class="flex-grow border-t border-slate-800"></div>
-                    <span class="flex-shrink mx-3 text-[10px] text-slate-500 uppercase font-semibold">Atau</span>
-                    <div class="flex-grow border-t border-slate-800"></div>
-                </div>
-
-                <!-- Quick Social & Guest Login -->
-                <div class="space-y-2">
-                    <button type="button" onclick="loginWithGoogle()" class="w-full py-2.5 bg-slate-800 hover:bg-slate-750 text-slate-200 border border-slate-700 text-xs font-semibold rounded-xl transition flex items-center justify-center space-x-2 shadow-sm">
-                        <svg class="w-4 h-4" viewBox="0 0 24 24">
-                            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
-                            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
-                        </svg>
-                        <span>Masuk dengan Google</span>
-                    </button>
-                    <button onclick="loginAsGuest()" class="w-full py-2 bg-slate-850 hover:bg-slate-800 text-slate-400 border border-slate-800 text-xs font-medium rounded-xl transition flex items-center justify-center space-x-2">
-                        <i class="fa-solid fa-user-secret text-amber-400"></i>
-                        <span>Masuk sebagai Tamu (Mode Anonym / Demo)</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ================= JAVASCRIPT LOGIC WITH AUTHENTICATION ================= -->
+    <!-- Firebase SDK & Application Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { 
+            getAuth, 
+            signInAnonymously, 
+            signInWithCustomToken, 
+            onAuthStateChanged,
+            GoogleAuthProvider,
+            signInWithPopup,
+            signInWithEmailAndPassword,
+            createUserWithEmailAndPassword,
+            signOut 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            doc, 
+            setDoc, 
+            deleteDoc, 
+            onSnapshot, 
+            collection 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Firebase Config setup
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'tradelog-pro-app';
-        const userFirebaseConfig = {
+        const userProvidedConfig = {
             apiKey: "AIzaSyDEoK-n0F08vJs9q22u8vQ86ZYPJxTQrok",
             authDomain: "jurnal-9546c.firebaseapp.com",
             projectId: "jurnal-9546c",
@@ -629,668 +544,382 @@
             appId: "1:150221842718:web:3fbd9a37b3038e7152010f",
             measurementId: "G-TT9D1JVS3W"
         };
-        const firebaseConfig = typeof __firebase_config !== 'undefined' 
-            ? JSON.parse(__firebase_config) 
-            : userFirebaseConfig;
 
-        let auth, db;
+        const firebaseConfig = typeof __firebase_config !== 'undefined'
+            ? JSON.parse(__firebase_config)
+            : userProvidedConfig;
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'tradelog-pro-app';
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const googleProvider = new GoogleAuthProvider();
+
         let currentUser = null;
-        let authMode = 'login';
+        let tradesCollectionRef = null;
+        let unsubscribeFirestore = null;
+        let tradeToDeleteId = null;
+        let isRegisterMode = false;
 
-        // State Global Aplikasi
-        let appState = {
-            accounts: [
-                { id: 'acc-1', name: 'Akun Real FXCM', modalAwal: 10000, desc: 'Akun utama trading Forex & Emas' },
-                { id: 'acc-2', name: 'Prop Firm 100k Challenge', modalAwal: 100000, desc: 'Akun tantangan evaluasi' }
-            ],
-            selectedAccountId: 'acc-1',
-            trades: []
-        };
+        // Data Store
+        let trades = [];
 
-        let equityChartInstance = null;
-
-        // Sample Data Inisialisasi
-        const initialSampleTrades = [
+        // Sample initial data if database is empty
+        const initialSampleData = [
             {
-                id: 'tr-1',
-                accountId: 'acc-1',
-                date: '2026-08-25 14:30',
-                pair: 'XAUUSD',
-                buySell: 'BUY',
-                lot: 0.50,
-                entryPrice: 2510.00,
-                exitPrice: 2525.00,
-                tp: 2530.00,
-                sl: 2500.00,
-                pnlPct: 7.50,
-                pnlVal: 750.00,
-                status: 'WIN',
-                strategy: 'SMC Liquidity Sweep',
-                notes: 'Sweep low London session, entry saat choch di M5.',
-                screenshot: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800&q=80'
+                id: '1',
+                date: '2026-02-25T14:30',
+                pair: 'XAU/USD',
+                type: 'LONG',
+                size: 1.0,
+                entry: 2010.50,
+                exit: 2025.00,
+                sl: 2005.00,
+                pnl: 14.50,
+                rr: 2.64,
+                setup: 'Breakout Retest',
+                emotion: 'Disciplined',
+                notes: 'Entry bagus sesuai instruksi indikator SNR.'
             },
             {
-                id: 'tr-2',
-                accountId: 'acc-1',
-                date: '2026-08-26 10:15',
-                pair: 'EURUSD',
-                buySell: 'SELL',
-                lot: 1.00,
-                entryPrice: 1.0850,
-                exitPrice: 1.0870,
-                tp: 1.0800,
-                sl: 1.0870,
-                pnlPct: -2.00,
-                pnlVal: -200.00,
-                status: 'LOSS',
-                strategy: 'Breakout Retest',
-                notes: 'Kena SL karena news high impact unexpectedly.',
-                screenshot: ''
+                id: '2',
+                date: '2026-02-26T09:15',
+                pair: 'BTC/USDT',
+                type: 'SHORT',
+                size: 0.5,
+                entry: 52000,
+                exit: 52800,
+                sl: 52400,
+                pnl: -400.00,
+                rr: -2.00,
+                setup: 'FVG Liquidity',
+                emotion: 'FOMO',
+                notes: 'Terlalu buru-buru entry tanpa tunggu konfirmasi rejection candle.'
             },
             {
-                id: 'tr-3',
-                accountId: 'acc-2',
-                date: '2026-08-27 16:00',
-                pair: 'BTCUSDT',
-                buySell: 'BUY',
-                lot: 0.20,
-                entryPrice: 64000.00,
-                exitPrice: 66500.00,
-                tp: 67000.00,
-                sl: 63000.00,
-                pnlPct: 5.00,
-                pnlVal: 5000.00,
-                status: 'WIN',
-                strategy: 'Trend Following',
-                notes: 'Bounce dari EMA 200 H4, momentum sangat kuat.',
-                screenshot: 'https://images.unsplash.com/photo-1642543492481-44e81e3914a7?w=800&q=80'
+                id: '3',
+                date: '2026-02-27T16:00',
+                pair: 'EUR/USD',
+                type: 'LONG',
+                size: 2.0,
+                entry: 1.0820,
+                exit: 1.0860,
+                sl: 1.0800,
+                pnl: 80.00,
+                rr: 2.00,
+                setup: 'Breakout Retest',
+                emotion: 'Patient',
+                notes: 'Sabar nunggu news pasar selesai dulu baru masuk.'
             }
         ];
 
-        window.addEventListener('DOMContentLoaded', async () => {
-            initFirebase();
-            loadSessionAndData();
-            renderAccountDropdown();
-            renderAccountListInModal();
-            updateDashboard();
-            initEquityChart();
-        });
+        let equityChartInstance = null;
+        let winLossChartInstance = null;
+        let strategyChartInstance = null;
+        let emotionChartInstance = null;
 
-        function initFirebase() {
+        async function initAuth() {
             try {
-                const app = initializeApp(firebaseConfig);
-                auth = getAuth(app);
-                db = getFirestore(app);
-
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    signInWithCustomToken(auth, __initial_auth_token).catch(() => {});
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else if (!auth.currentUser) {
+                    await signInAnonymously(auth);
                 }
-
-                onAuthStateChanged(auth, (user) => {
-                    currentUser = user;
-                    updateAuthUI();
-                    if (user) {
-                        loadCloudDataForUser(user.uid);
-                    }
-                });
-            } catch (e) {
-                console.log('Mode lokal tanpa backend cloud');
-            }
-        }
-
-        function getUserKey() {
-            const loggedUser = JSON.parse(localStorage.getItem('trade_log_active_user') || 'null');
-            return loggedUser ? `tradelog_state_${loggedUser.id}` : 'trade_journal_pro_state_v2';
-        }
-
-        function loadSessionAndData() {
-            const loggedUser = JSON.parse(localStorage.getItem('trade_log_active_user') || 'null');
-            if (loggedUser) {
-                updateAuthUIWithUser(loggedUser);
-            }
-
-            const key = getUserKey();
-            const saved = localStorage.getItem(key);
-            if (saved) {
+            } catch (err) {
+                console.warn('Initial custom auth fallback to anonymous:', err);
                 try {
-                    appState = JSON.parse(saved);
+                    if (!auth.currentUser) await signInAnonymously(auth);
                 } catch (e) {
-                    console.error('Gagal membaca data', e);
-                }
-            } else {
-                appState.trades = initialSampleTrades;
-                saveStateToLocalStorage();
-            }
-        }
-
-        function saveStateToLocalStorage() {
-            const key = getUserKey();
-            localStorage.setItem(key, JSON.stringify(appState));
-            saveCloudDataForUser();
-        }
-
-        async function loadCloudDataForUser(uid) {
-            if (!db) return;
-            try {
-                const userDocRef = doc(db, 'artifacts', appId, 'users', uid, 'journalData', 'mainState');
-                const docSnap = await getDoc(userDocRef);
-                if (docSnap.exists()) {
-                    appState = docSnap.data();
-                    renderAccountDropdown();
-                    renderAccountListInModal();
-                    updateDashboard();
-                    filterTrades();
-                }
-            } catch (err) {
-                console.log('Status Sinkronisasi Cloud:', err);
-            }
-        }
-
-        async function saveCloudDataForUser() {
-            if (!db || !auth || !auth.currentUser) return;
-            try {
-                const uid = auth.currentUser.uid;
-                const userDocRef = doc(db, 'artifacts', appId, 'users', uid, 'journalData', 'mainState');
-                await setDoc(userDocRef, appState);
-            } catch (err) {
-                console.log('Status Penyimpanan Cloud:', err);
-            }
-        }
-
-        function openLoginModal() {
-            document.getElementById('loginModal').classList.remove('hidden');
-        }
-
-        function closeLoginModal() {
-            document.getElementById('loginModal').classList.add('hidden');
-            hideAuthAlert();
-        }
-
-        function switchAuthTab(mode) {
-            authMode = mode;
-            const tabLogin = document.getElementById('tabLoginBtn');
-            const tabRegister = document.getElementById('tabRegisterBtn');
-            const nameContainer = document.getElementById('nameFieldContainer');
-            const modalTitle = document.getElementById('loginModalTitle');
-            const submitText = document.getElementById('authSubmitText');
-
-            if (mode === 'login') {
-                tabLogin.className = 'flex-1 py-1.5 text-xs font-semibold rounded-lg bg-brand-600 text-white transition';
-                tabRegister.className = 'flex-1 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition';
-                nameContainer.classList.add('hidden');
-                modalTitle.innerText = 'Masuk ke TradeLogPro';
-                submitText.innerText = 'Masuk Sekarang';
-            } else {
-                tabRegister.className = 'flex-1 py-1.5 text-xs font-semibold rounded-lg bg-brand-600 text-white transition';
-                tabLogin.className = 'flex-1 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition';
-                nameContainer.classList.remove('hidden');
-                modalTitle.innerText = 'Daftar Akun Trader';
-                submitText.innerText = 'Buat Akun Baru';
-            }
-            hideAuthAlert();
-        }
-
-        function submitAuthForm(e) {
-            e.preventDefault();
-            const email = document.getElementById('authEmailInput').value.trim();
-            const password = document.getElementById('authPasswordInput').value;
-            const name = document.getElementById('authNameInput').value.trim() || email.split('@')[0];
-
-            if (!email || !password) {
-                showAuthAlert('Mohon isi Email dan Kata Sandi!', 'error');
-                return;
-            }
-
-            const users = JSON.parse(localStorage.getItem('trade_log_users') || '[]');
-
-            if (authMode === 'register') {
-                const existing = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-                if (existing) {
-                    showAuthAlert('Email ini sudah terdaftar! Silakan login.', 'error');
-                    return;
-                }
-                const newUser = {
-                    id: 'usr-' + Date.now(),
-                    name: name,
-                    email: email,
-                    password: password
-                };
-                users.push(newUser);
-                localStorage.setItem('trade_log_users', JSON.stringify(users));
-                setActiveUser(newUser);
-                showAuthAlert('Pendaftaran berhasil! Selamat datang, ' + name, 'success');
-            } else {
-                const user = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
-                if (!user && email !== 'demo@trader.com') {
-                    const demoUser = { id: 'usr-' + Date.now(), name: name || 'Trader Pro', email: email, password: password };
-                    users.push(demoUser);
-                    localStorage.setItem('trade_log_users', JSON.stringify(users));
-                    setActiveUser(demoUser);
-                } else if (user) {
-                    setActiveUser(user);
-                } else {
-                    setActiveUser({ id: 'usr-demo', name: 'Demo Trader', email: 'demo@trader.com' });
+                    console.error('Anonymous auth error:', e);
                 }
             }
-
-            if (auth) {
-                signInAnonymously(auth).catch(() => {});
-            }
-
-            setTimeout(() => {
-                closeLoginModal();
-                loadSessionAndData();
-                renderAccountDropdown();
-                updateDashboard();
-                filterTrades();
-            }, 600);
         }
 
-        function loginAsGuest() {
-            const guestUser = {
-                id: 'usr-guest-' + Math.floor(Math.random() * 10000),
-                name: 'Trader Tamu (Demo)',
-                email: 'guest@tradelog.pro'
-            };
-            setActiveUser(guestUser);
-            if (auth) signInAnonymously(auth).catch(() => {});
-
-            closeLoginModal();
-            loadSessionAndData();
-            renderAccountDropdown();
-            updateDashboard();
-            filterTrades();
-        }
-
-        async function loginWithGoogle() {
-            if (!auth) {
-                showAuthAlert('Firebase Auth belum diinisialisasi.', 'error');
-                return;
-            }
-            try {
-                const provider = new GoogleAuthProvider();
-                const result = await signInWithPopup(auth, provider);
-                const user = result.user;
-                const googleUser = {
-                    id: user.uid,
-                    name: user.displayName || 'Google Trader',
-                    email: user.email || 'user@google.com'
-                };
-                setActiveUser(googleUser);
-                showAuthAlert(`Selamat datang, ${googleUser.name}!`, 'success');
-                setTimeout(() => {
-                    closeLoginModal();
-                    loadSessionAndData();
-                    renderAccountDropdown();
-                    updateDashboard();
-                    filterTrades();
-                }, 600);
-            } catch (error) {
-                console.error('Google Auth Error:', error);
-                showAuthAlert('Gagal masuk dengan Google: ' + (error.message || 'Terjadi kesalahan'), 'error');
-            }
-        }
-
-        function setActiveUser(user) {
-            localStorage.setItem('trade_log_active_user', JSON.stringify(user));
-            updateAuthUIWithUser(user);
-        }
-
-        function handleLogout() {
-            localStorage.removeItem('trade_log_active_user');
-            if (auth) signOut(auth).catch(() => {});
-
-            updateAuthUIWithUser(null);
-            loadSessionAndData();
-            renderAccountDropdown();
-            updateDashboard();
-            filterTrades();
-
-            const menu = document.getElementById('userMenu');
-            if (menu) menu.classList.add('hidden');
-        }
-
-        function updateAuthUI() {
-            const loggedUser = JSON.parse(localStorage.getItem('trade_log_active_user') || 'null');
-            if (loggedUser) {
-                updateAuthUIWithUser(loggedUser);
-            } else if (currentUser) {
-                updateAuthUIWithUser({
-                    id: currentUser.uid.substring(0, 8),
-                    name: 'Trader Logged In',
-                    email: currentUser.email || 'user@firebase.app'
-                });
-            } else {
-                updateAuthUIWithUser(null);
-            }
-        }
-
-        function updateAuthUIWithUser(user) {
-            const statusText = document.getElementById('userStatusText');
-            const authBtn = document.getElementById('authBtn');
-            const userMenu = document.getElementById('userMenu');
-            const userEmailEl = document.getElementById('loggedInUserEmail');
-            const userIdEl = document.getElementById('loggedInUserId');
+        // Firebase Auth State Listener
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            updateUserUI(user);
 
             if (user) {
-                statusText.innerText = user.name || 'Trader Active';
-                authBtn.className = 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-2';
-                authBtn.onclick = toggleUserMenu;
-                if (userEmailEl) userEmailEl.innerText = user.email || user.name;
-                if (userIdEl) userIdEl.innerText = `ID: ${user.id}`;
-            } else {
-                statusText.innerText = 'Masuk / Login';
-                authBtn.className = 'bg-brand-600/20 hover:bg-brand-600/30 text-brand-400 border border-brand-500/30 px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-2';
-                authBtn.onclick = openLoginModal;
-                if (userMenu) userMenu.classList.add('hidden');
-            }
-        }
+                const userId = user.uid;
+                // Strict path convention: /artifacts/{appId}/users/{userId}/trades
+                tradesCollectionRef = collection(db, 'artifacts', appId, 'users', userId, 'trades');
 
-        function toggleUserMenu() {
-            const menu = document.getElementById('userMenu');
-            if (menu) menu.classList.toggle('hidden');
-        }
-
-        function showAuthAlert(msg, type = 'error') {
-            const alertEl = document.getElementById('authAlert');
-            alertEl.classList.remove('hidden', 'bg-rose-500/10', 'text-rose-400', 'border-rose-500/30', 'bg-emerald-500/10', 'text-emerald-400', 'border-emerald-500/30');
-            if (type === 'error') {
-                alertEl.classList.add('bg-rose-500/10', 'text-rose-400', 'border-rose-500/30');
-            } else {
-                alertEl.classList.add('bg-emerald-500/10', 'text-emerald-400', 'border-emerald-500/30');
-            }
-            alertEl.innerText = msg;
-        }
-
-        function hideAuthAlert() {
-            const alertEl = document.getElementById('authAlert');
-            if (alertEl) alertEl.classList.add('hidden');
-        }
-
-        // Attach function handlers to window scope for HTML onclick events
-        window.openLoginModal = openLoginModal;
-        window.closeLoginModal = closeLoginModal;
-        window.switchAuthTab = switchAuthTab;
-        window.submitAuthForm = submitAuthForm;
-        window.loginAsGuest = loginAsGuest;
-        window.handleLogout = handleLogout;
-        window.toggleUserMenu = toggleUserMenu;
-
-        // ================= AKUN MANAGEMENT =================
-
-        function renderAccountDropdown() {
-            const select = document.getElementById('accountSelect');
-            const formSelect = document.getElementById('formAccountSelect');
-            
-            let html = `<option value="ALL">Semua Akun (Gabungan)</option>`;
-            let formHtml = '';
-
-            appState.accounts.forEach(acc => {
-                const isSelected = acc.id === appState.selectedAccountId ? 'selected' : '';
-                html += `<option value="${acc.id}" ${isSelected}>${acc.name}</option>`;
-                formHtml += `<option value="${acc.id}">${acc.name}</option>`;
-            });
-
-            select.innerHTML = html;
-            formSelect.innerHTML = formHtml;
-
-            // Set current title & desc banner
-            const currentAccTitle = document.getElementById('currentAccountTitle');
-            const currentAccDesc = document.getElementById('currentAccountDesc');
-            const displayModalAwal = document.getElementById('displayModalAwal');
-
-            if (appState.selectedAccountId === 'ALL') {
-                currentAccTitle.innerText = 'Semua Akun Trading (Overview)';
-                currentAccDesc.innerText = 'Menampilkan statistik dan transaksi gabungan dari seluruh akun jurnal Anda.';
-                
-                // Total Modal Awal
-                const totalModal = appState.accounts.reduce((sum, a) => sum + parseFloat(a.modalAwal || 0), 0);
-                displayModalAwal.innerText = formatUSD(totalModal);
-            } else {
-                const activeAcc = appState.accounts.find(a => a.id === appState.selectedAccountId) || appState.accounts[0];
-                currentAccTitle.innerText = activeAcc.name;
-                currentAccDesc.innerText = activeAcc.desc || 'Jurnal pencatatan transaksi untuk strategi utama.';
-                displayModalAwal.innerText = formatUSD(activeAcc.modalAwal);
-            }
-        }
-
-        function switchAccount(accId) {
-            appState.selectedAccountId = accId;
-            saveStateToLocalStorage();
-            renderAccountDropdown();
-            updateDashboard();
-            filterTrades();
-        }
-
-        function openAccountModal() {
-            renderAccountListInModal();
-            document.getElementById('accountModal').classList.remove('hidden');
-        }
-
-        function closeAccountModal() {
-            document.getElementById('accountModal').classList.add('hidden');
-        }
-
-        function renderAccountListInModal() {
-            const container = document.getElementById('accountListContainer');
-            let html = '';
-
-            appState.accounts.forEach(acc => {
-                // hitung total PnL akun
-                const accTrades = appState.trades.filter(t => t.accountId === acc.id);
-                const totalPnL = accTrades.reduce((sum, t) => sum + (parseFloat(t.pnlVal) || 0), 0);
-                const currentBal = parseFloat(acc.modalAwal) + totalPnL;
-
-                html += `
-                    <div class="bg-slate-800 border border-slate-700 p-3 rounded-xl flex items-center justify-between">
-                        <div>
-                            <div class="font-bold text-sm text-white">${acc.name}</div>
-                            <div class="text-xs text-slate-400">Modal Awal: <span class="text-amber-400 font-semibold">${formatUSD(acc.modalAwal)}</span> | Saldo: <span class="text-emerald-400 font-semibold">${formatUSD(currentBal)}</span></div>
-                        </div>
-                        <div class="flex items-center space-x-1">
-                            ${appState.accounts.length > 1 ? `
-                            <button onclick="deleteAccount('${acc.id}')" class="p-1.5 text-rose-400 hover:bg-rose-500/10 rounded-lg transition" title="Hapus Akun">
-                                <i class="fa-solid fa-trash"></i>
-                            </button>` : ''}
-                        </div>
-                    </div>
-                `;
-            });
-
-            container.innerHTML = html;
-        }
-
-        function addNewAccount() {
-            const name = document.getElementById('newAccountName').value.trim();
-            const modalAwal = parseFloat(document.getElementById('newAccountModal').value);
-            const desc = document.getElementById('newAccountDesc').value.trim();
-
-            if (!name || isNaN(modalAwal) || modalAwal < 0) {
-                alert('Harap isi Nama Akun dan Modal Awal dengan benar!');
-                return;
-            }
-
-            const newAcc = {
-                id: 'acc-' + Date.now(),
-                name: name,
-                modalAwal: modalAwal,
-                desc: desc || 'Akun Trading'
-            };
-
-            appState.accounts.push(newAcc);
-            appState.selectedAccountId = newAcc.id;
-            saveStateToLocalStorage();
-
-            // Reset inputs
-            document.getElementById('newAccountName').value = '';
-            document.getElementById('newAccountModal').value = '';
-            document.getElementById('newAccountDesc').value = '';
-
-            renderAccountDropdown();
-            renderAccountListInModal();
-            updateDashboard();
-            filterTrades();
-        }
-
-        function deleteAccount(accId) {
-            if (confirm('Apakah Anda yakin ingin menghapus akun ini beserta seluruh transaksinya?')) {
-                appState.accounts = appState.accounts.filter(a => a.id !== accId);
-                appState.trades = appState.trades.filter(t => t.accountId !== accId);
-
-                if (appState.selectedAccountId === accId) {
-                    appState.selectedAccountId = appState.accounts[0] ? appState.accounts[0].id : 'ALL';
+                const statusEl = document.getElementById('cloudStatus');
+                if (statusEl) {
+                    statusEl.innerHTML = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" title="User ID: ${userId}"><i class="fa-solid fa-cloud-check text-xs"></i> Cloud Live</span>`;
                 }
 
-                saveStateToLocalStorage();
-                renderAccountDropdown();
-                renderAccountListInModal();
-                updateDashboard();
-                filterTrades();
+                // Subscribe to Firestore updates (in-memory sorting & filtering)
+                if (unsubscribeFirestore) unsubscribeFirestore();
+                unsubscribeFirestore = onSnapshot(tradesCollectionRef, (snapshot) => {
+                    const fetchedTrades = [];
+                    snapshot.forEach((docSnap) => {
+                        fetchedTrades.push({ id: docSnap.id, ...docSnap.data() });
+                    });
+
+                    if (fetchedTrades.length === 0 && trades.length === 0) {
+                        // Seed initial sample data for new user database
+                        initialSampleData.forEach(async (sample) => {
+                            await setDoc(doc(tradesCollectionRef, sample.id), sample);
+                        });
+                    } else {
+                        trades = fetchedTrades;
+                        saveTradesToLocalStorage();
+                        updateDashboard();
+                        populateFilterOptions();
+                        renderTrades();
+                    }
+                }, (error) => {
+                    console.error("Firestore sync error:", error);
+                    showToast("Gagal sinkronisasi data cloud", "error");
+                });
+            } else {
+                const statusEl = document.getElementById('cloudStatus');
+                if (statusEl) {
+                    statusEl.innerHTML = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20"><i class="fa-solid fa-circle-pause text-xs"></i> Mode Guest</span>`;
+                }
+            }
+        });
+
+        // Initialize App on DOM Loaded
+        window.addEventListener('DOMContentLoaded', () => {
+            initAuth();
+            loadTradesFromLocalStorage();
+            initCharts();
+            updateDashboard();
+            populateFilterOptions();
+            renderTrades();
+            calculateRisk();
+            
+            document.getElementById('fieldDate').value = new Date().toISOString().slice(0, 16);
+            document.getElementById('confirmDeleteBtn').addEventListener('click', executeDeleteTrade);
+            
+            // Auth form bindings
+            document.getElementById('googleSignInBtn').addEventListener('click', handleGoogleSignIn);
+            document.getElementById('emailAuthForm').addEventListener('submit', handleEmailAuth);
+            document.getElementById('logoutBtn').addEventListener('click', handleLogout);
+            document.getElementById('authModeLogin').addEventListener('click', () => setAuthMode(false));
+            document.getElementById('authModeRegister').addEventListener('click', () => setAuthMode(true));
+        });
+
+        function updateUserUI(user) {
+            const statusText = document.getElementById('userStatusText');
+            const loggedInView = document.getElementById('authLoggedInView');
+            const loggedOutView = document.getElementById('authLoggedOutView');
+            const userDisplayName = document.getElementById('userDisplayName');
+
+            if (user && !user.isAnonymous) {
+                const nameOrEmail = user.displayName || user.email || 'Trader';
+                statusText.textContent = nameOrEmail.length > 14 ? nameOrEmail.substring(0, 12) + '...' : nameOrEmail;
+                userDisplayName.textContent = nameOrEmail;
+                loggedInView.classList.remove('hidden');
+                loggedOutView.classList.add('hidden');
+            } else {
+                statusText.textContent = 'Masuk / Daftar';
+                loggedInView.classList.add('hidden');
+                loggedOutView.classList.remove('hidden');
             }
         }
 
-        // ================= EDIT MODAL AWAL =================
+        function setAuthMode(register) {
+            isRegisterMode = register;
+            const loginBtn = document.getElementById('authModeLogin');
+            const regBtn = document.getElementById('authModeRegister');
+            const submitBtn = document.getElementById('authSubmitBtn');
+            const errBox = document.getElementById('authErrorMsg');
 
-        function openEditModalAwal() {
-            if (appState.selectedAccountId === 'ALL') {
-                alert('Silakan pilih salah satu akun spesifik terlebih dahulu untuk mengubah Modal Awal.');
-                return;
-            }
-            const activeAcc = appState.accounts.find(a => a.id === appState.selectedAccountId);
-            if (!activeAcc) return;
-
-            document.getElementById('modalAwalAccountName').innerText = activeAcc.name;
-            document.getElementById('editModalAwalInput').value = activeAcc.modalAwal;
-            document.getElementById('modalAwalModal').classList.remove('hidden');
-        }
-
-        function closeEditModalAwal() {
-            document.getElementById('modalAwalModal').classList.add('hidden');
-        }
-
-        function saveModalAwal() {
-            const val = parseFloat(document.getElementById('editModalAwalInput').value);
-            if (isNaN(val) || val < 0) {
-                alert('Harap masukkan nominal modal awal yang valid.');
-                return;
-            }
-
-            const activeAcc = appState.accounts.find(a => a.id === appState.selectedAccountId);
-            if (activeAcc) {
-                activeAcc.modalAwal = val;
-                saveStateToLocalStorage();
-                renderAccountDropdown();
-                updateDashboard();
-                closeEditModalAwal();
+            errBox.classList.add('hidden');
+            if (register) {
+                regBtn.className = 'flex-1 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white transition';
+                loginBtn.className = 'flex-1 py-1.5 text-xs font-semibold rounded-lg text-gray-400 hover:text-white transition';
+                submitBtn.textContent = 'Daftar Akun Baru';
+            } else {
+                loginBtn.className = 'flex-1 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white transition';
+                regBtn.className = 'flex-1 py-1.5 text-xs font-semibold rounded-lg text-gray-400 hover:text-white transition';
+                submitBtn.textContent = 'Masuk ke Akun';
             }
         }
 
-        // ================= DASHBOARD & METRICS =================
+        async function handleGoogleSignIn() {
+            const errBox = document.getElementById('authErrorMsg');
+            errBox.classList.add('hidden');
+            try {
+                await signInWithPopup(auth, googleProvider);
+                closeModal('authModal');
+                showToast('Berhasil masuk dengan Google!');
+            } catch (err) {
+                console.error("Google Auth error:", err);
+                errBox.textContent = "Gagal login Google: " + (err.message || "Popup diblokir browser");
+                errBox.classList.remove('hidden');
+            }
+        }
+
+        async function handleEmailAuth(e) {
+            e.preventDefault();
+            const email = document.getElementById('authEmail').value;
+            const password = document.getElementById('authPassword').value;
+            const errBox = document.getElementById('authErrorMsg');
+            errBox.classList.add('hidden');
+
+            try {
+                if (isRegisterMode) {
+                    await createUserWithEmailAndPassword(auth, email, password);
+                    showToast('Akun berhasil dibuat & terhubung!');
+                } else {
+                    await signInWithEmailAndPassword(auth, email, password);
+                    showToast('Berhasil masuk ke akun!');
+                }
+                closeModal('authModal');
+            } catch (err) {
+                console.error("Email Auth error:", err);
+                let msg = err.message;
+                if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password') {
+                    msg = 'Email atau password salah!';
+                } else if (err.code === 'auth/email-already-in-use') {
+                    msg = 'Email ini sudah terdaftar!';
+                } else if (err.code === 'auth/weak-password') {
+                    msg = 'Password minimal 6 karakter!';
+                }
+                errBox.textContent = msg;
+                errBox.classList.remove('hidden');
+            }
+        }
+
+        async function handleLogout() {
+            try {
+                await signOut(auth);
+                await signInAnonymously(auth);
+                closeModal('authModal');
+                showToast('Berhasil logout dari akun cloud');
+            } catch (err) {
+                console.error("Logout error:", err);
+            }
+        }
+
+        function loadTradesFromLocalStorage() {
+            const saved = localStorage.getItem('tradelog_data');
+            if (saved) {
+                try {
+                    trades = JSON.parse(saved);
+                } catch (e) {
+                    trades = [...initialSampleData];
+                }
+            } else {
+                trades = [...initialSampleData];
+            }
+        }
+
+        function saveTradesToLocalStorage() {
+            localStorage.setItem('tradelog_data', JSON.stringify(trades));
+        }
+
+        async function saveTradeToCloud(tradeObj) {
+            if (!currentUser || !tradesCollectionRef) return;
+            try {
+                const docRef = doc(tradesCollectionRef, tradeObj.id);
+                await setDoc(docRef, tradeObj);
+            } catch (err) {
+                console.error("Cloud save error:", err);
+                showToast("Gagal menyimpan ke cloud", "error");
+            }
+        }
+
+        async function deleteTradeFromCloud(id) {
+            if (!currentUser || !tradesCollectionRef) return;
+            try {
+                const docRef = doc(tradesCollectionRef, id);
+                await deleteDoc(docRef);
+            } catch (err) {
+                console.error("Cloud delete error:", err);
+                showToast("Gagal menghapus dari cloud", "error");
+            }
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('main > section').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`view-${tabName}`).classList.remove('hidden');
+
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('border-blue-500', 'text-blue-500');
+                btn.classList.add('border-transparent', 'text-gray-400');
+            });
+
+            const activeBtn = document.getElementById(`tab-${tabName}`);
+            activeBtn.classList.remove('border-transparent', 'text-gray-400');
+            activeBtn.classList.add('border-blue-500', 'text-blue-500');
+
+            if (tabName === 'analytics') {
+                renderAnalyticsCharts();
+            }
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastMsg.textContent = message;
+            if (type === 'success') {
+                toastIcon.className = 'fa-solid fa-circle-check text-emerald-400 text-lg';
+            } else {
+                toastIcon.className = 'fa-solid fa-circle-exclamation text-rose-400 text-lg';
+            }
+
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('hidden'), 3000);
+        }
 
         function updateDashboard() {
-            // Target trades based on selected account
-            let activeTrades = appState.trades;
-            let totalModalAwal = 0;
+            const totalTrades = trades.length;
+            const wins = trades.filter(t => t.pnl > 0);
+            const losses = trades.filter(t => t.pnl < 0);
+            const beps = trades.filter(t => t.pnl === 0);
 
-            if (appState.selectedAccountId === 'ALL') {
-                totalModalAwal = appState.accounts.reduce((sum, a) => sum + parseFloat(a.modalAwal || 0), 0);
-            } else {
-                const acc = appState.accounts.find(a => a.id === appState.selectedAccountId);
-                totalModalAwal = acc ? parseFloat(acc.modalAwal || 0) : 0;
-                activeTrades = appState.trades.filter(t => t.accountId === appState.selectedAccountId);
-            }
+            const winCount = wins.length;
+            const lossCount = losses.length;
+            const winRate = totalTrades > 0 ? ((winCount / totalTrades) * 100).toFixed(1) : '0.0';
 
-            // Calculations
-            let totalPnLVal = 0;
-            let winCount = 0;
-            let lossCount = 0;
-            let openCount = 0;
-            let beCount = 0;
+            const totalPnL = trades.reduce((acc, t) => acc + (t.pnl || 0), 0);
+            const grossProfit = wins.reduce((acc, t) => acc + t.pnl, 0);
+            const grossLoss = Math.abs(losses.reduce((acc, t) => acc + t.pnl, 0));
+            const profitFactor = grossLoss > 0 ? (grossProfit / grossLoss).toFixed(2) : (grossProfit > 0 ? 'INF' : '0.00');
 
-            let totalWinVal = 0;
-            let totalLossVal = 0;
+            const bestTrade = trades.length > 0 ? Math.max(...trades.map(t => t.pnl)) : 0;
+            const worstTrade = trades.length > 0 ? Math.min(...trades.map(t => t.pnl)) : 0;
 
-            activeTrades.forEach(t => {
-                const val = parseFloat(t.pnlVal) || 0;
-                if (t.status === 'WIN') {
-                    winCount++;
-                    totalWinVal += val;
-                    totalPnLVal += val;
-                } else if (t.status === 'LOSS') {
-                    lossCount++;
-                    totalLossVal += Math.abs(val);
-                    totalPnLVal += val; // val is negative
-                } else if (t.status === 'BE') {
-                    beCount++;
-                } else if (t.status === 'OPEN') {
-                    openCount++;
-                }
-            });
+            const pnlEl = document.getElementById('stat-pnl');
+            pnlEl.textContent = `${totalPnL >= 0 ? '+' : ''}$${totalPnL.toFixed(2)}`;
+            pnlEl.className = `text-xl font-bold ${totalPnL >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
 
-            const currentBalance = totalModalAwal + totalPnLVal;
-            const returnPct = totalModalAwal > 0 ? (totalPnLVal / totalModalAwal) * 100 : 0;
-            const closedTradesCount = winCount + lossCount + beCount;
-            const winRate = closedTradesCount > 0 ? ((winCount / closedTradesCount) * 100).toFixed(1) : 0;
+            document.getElementById('stat-winrate').textContent = `${winRate}%`;
+            document.getElementById('stat-wins').textContent = winCount;
+            document.getElementById('stat-losses').textContent = lossCount;
+            document.getElementById('stat-pf').textContent = profitFactor;
+            document.getElementById('stat-trades').textContent = totalTrades;
+            document.getElementById('stat-best').textContent = `$${bestTrade.toFixed(2)}`;
+            document.getElementById('stat-worst').textContent = `$${worstTrade.toFixed(2)}`;
 
-            const profitFactor = totalLossVal > 0 ? (totalWinVal / totalLossVal).toFixed(2) : (totalWinVal > 0 ? 'INF' : '0.00');
-            const avgWin = winCount > 0 ? (totalWinVal / winCount).toFixed(0) : 0;
-            const avgLoss = lossCount > 0 ? (totalLossVal / lossCount).toFixed(0) : 0;
+            document.getElementById('donutWin').textContent = winCount;
+            document.getElementById('donutLoss').textContent = lossCount;
+            document.getElementById('donutBep').textContent = beps.length;
 
-            // Update UI Elements
-            document.getElementById('metricCurrentBalance').innerText = formatUSD(currentBalance);
-            
-            const growthEl = document.getElementById('metricReturnGrowth');
-            const returnColor = returnPct >= 0 ? 'text-emerald-400' : 'text-rose-400';
-            growthEl.innerHTML = `Growth: <span class="${returnColor} font-semibold">${returnPct >= 0 ? '+' : ''}${returnPct.toFixed(2)}%</span>`;
-
-            const pnlValEl = document.getElementById('metricTotalPnLVal');
-            pnlValEl.innerText = `${totalPnLVal >= 0 ? '+' : ''}${formatUSD(totalPnLVal)}`;
-            pnlValEl.className = `text-xl font-extrabold ${totalPnLVal > 0 ? 'text-emerald-400' : (totalPnLVal < 0 ? 'text-rose-400' : 'text-slate-200')}`;
-
-            document.getElementById('metricTotalPnLPct').innerText = `${returnPct >= 0 ? '+' : ''}${returnPct.toFixed(2)}% dari Modal Awal`;
-
-            document.getElementById('metricWinRate').innerText = `${winRate}%`;
-            document.getElementById('metricWinLossRatio').innerText = `${winCount} Win / ${lossCount} Loss / ${beCount} BE`;
-
-            document.getElementById('metricTotalTrades').innerText = activeTrades.length;
-            document.getElementById('metricOpenTrades').innerText = `${openCount} Posisi Open`;
-
-            document.getElementById('metricProfitFactor').innerText = profitFactor;
-            document.getElementById('metricAvgWinLoss').innerText = `Avg W: $${avgWin} / L: $${avgLoss}`;
-
-            updateStrategyDropdownOptions(activeTrades);
-            updateEquityChart(activeTrades, totalModalAwal);
+            updateChartsData(trades);
         }
 
-        function updateStrategyDropdownOptions(trades) {
-            const select = document.getElementById('filterStrategy');
-            const currentVal = select.value;
-            const strategies = [...new Set(trades.map(t => t.strategy).filter(Boolean))];
-
-            let html = `<option value="ALL">Semua Strategi</option>`;
-            strategies.forEach(st => {
-                html += `<option value="${st}">${st}</option>`;
-            });
-            select.innerHTML = html;
-            select.value = currentVal;
-        }
-
-        // ================= CHART LOGIC =================
-
-        function initEquityChart() {
-            const ctx = document.getElementById('equityChart').getContext('2d');
-            equityChartInstance = new Chart(ctx, {
+        function initCharts() {
+            const ctxEquity = document.getElementById('equityChart').getContext('2d');
+            equityChartInstance = new Chart(ctxEquity, {
                 type: 'line',
                 data: {
-                    labels: ['Start'],
+                    labels: [],
                     datasets: [{
-                        label: 'Equity ($)',
-                        data: [10000],
-                        borderColor: '#0ea5e9',
-                        backgroundColor: 'rgba(14, 165, 233, 0.1)',
+                        label: 'Cumulative P&L ($)',
+                        data: [],
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
                         fill: true,
                         tension: 0.3,
-                        borderWidth: 2,
                         pointRadius: 4,
                         pointHoverRadius: 6
                     }]
@@ -1298,431 +927,402 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false }
-                    },
+                    plugins: { legend: { display: false } },
                     scales: {
-                        x: {
-                            grid: { color: 'rgba(255,255,255,0.05)' },
-                            ticks: { color: '#94a3b8', font: { size: 10 } }
-                        },
-                        y: {
-                            grid: { color: 'rgba(255,255,255,0.05)' },
-                            ticks: { 
-                                color: '#94a3b8', 
-                                font: { size: 10 },
-                                callback: function(val) { return '$' + val.toLocaleString(); }
-                            }
-                        }
+                        x: { grid: { color: '#1f2937' }, ticks: { color: '#9ca3af' } },
+                        y: { grid: { color: '#1f2937' }, ticks: { color: '#9ca3af' } }
+                    }
+                }
+            });
+
+            const ctxWinLoss = document.getElementById('winLossChart').getContext('2d');
+            winLossChartInstance = new Chart(ctxWinLoss, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Win', 'Loss', 'BEP'],
+                    datasets: [{
+                        data: [0, 0, 0],
+                        backgroundColor: ['#10b981', '#ef4444', '#6b7280'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { color: '#9ca3af' } } },
+                    cutout: '70%'
+                }
+            });
+        }
+
+        function updateChartsData(tradesList) {
+            if (!equityChartInstance) return;
+
+            const sorted = [...tradesList].sort((a, b) => new Date(a.date) - new Date(b.date));
+            let cumulative = 0;
+            const labels = sorted.map((t, index) => `#${index + 1} ${t.pair}`);
+            const dataPnL = sorted.map(t => {
+                cumulative += (t.pnl || 0);
+                return cumulative;
+            });
+
+            equityChartInstance.data.labels = labels;
+            equityChartInstance.data.datasets[0].data = dataPnL;
+            equityChartInstance.update();
+
+            const wins = tradesList.filter(t => t.pnl > 0).length;
+            const losses = tradesList.filter(t => t.pnl < 0).length;
+            const bep = tradesList.filter(t => t.pnl === 0).length;
+
+            winLossChartInstance.data.datasets[0].data = [wins, losses, bep];
+            winLossChartInstance.update();
+        }
+
+        function renderAnalyticsCharts() {
+            const strategyMap = {};
+            trades.forEach(t => {
+                const setup = t.setup || 'Unassigned';
+                strategyMap[setup] = (strategyMap[setup] || 0) + (t.pnl || 0);
+            });
+
+            const stratLabels = Object.keys(strategyMap);
+            const stratValues = Object.values(strategyMap);
+
+            if (strategyChartInstance) strategyChartInstance.destroy();
+            const ctxStrat = document.getElementById('strategyChart').getContext('2d');
+            strategyChartInstance = new Chart(ctxStrat, {
+                type: 'bar',
+                data: {
+                    labels: stratLabels,
+                    datasets: [{
+                        label: 'Net P&L ($)',
+                        data: stratValues,
+                        backgroundColor: stratValues.map(v => v >= 0 ? '#10b981' : '#ef4444'),
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: '#9ca3af' } },
+                        y: { grid: { color: '#1f2937' }, ticks: { color: '#9ca3af' } }
+                    }
+                }
+            });
+
+            const emotionMap = {};
+            trades.forEach(t => {
+                const emo = t.emotion || 'Disciplined';
+                if (!emotionMap[emo]) emotionMap[emo] = { wins: 0, total: 0 };
+                emotionMap[emo].total++;
+                if (t.pnl > 0) emotionMap[emo].wins++;
+            });
+
+            const emoLabels = Object.keys(emotionMap);
+            const emoWinRates = emoLabels.map(emo => {
+                const item = emotionMap[emo];
+                return ((item.wins / item.total) * 100).toFixed(1);
+            });
+
+            if (emotionChartInstance) emotionChartInstance.destroy();
+            const ctxEmo = document.getElementById('emotionChart').getContext('2d');
+            emotionChartInstance = new Chart(ctxEmo, {
+                type: 'bar',
+                data: {
+                    labels: emoLabels,
+                    datasets: [{
+                        label: 'Win Rate (%)',
+                        data: emoWinRates,
+                        backgroundColor: '#8b5cf6',
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: '#9ca3af' } },
+                        y: { min: 0, max: 100, grid: { color: '#1f2937' }, ticks: { color: '#9ca3af' } }
                     }
                 }
             });
         }
 
-        function updateEquityChart(trades, initialModal) {
-            if (!equityChartInstance) return;
+        function populateFilterOptions() {
+            const pairs = [...new Set(trades.map(t => t.pair.toUpperCase()))];
+            const setups = [...new Set(trades.map(t => t.setup).filter(Boolean))];
 
-            const labels = ['Awal'];
-            const data = [initialModal];
+            const pairSelect = document.getElementById('filterPair');
+            pairSelect.innerHTML = '<option value="ALL">Semua Pair</option>' + 
+                pairs.map(p => `<option value="${p}">${p}</option>`).join('');
 
-            let runningBalance = initialModal;
-            // Urutkan trades berdasarkan id / waktu
-            const sorted = [...trades].reverse();
-
-            sorted.forEach((t, idx) => {
-                if (t.status !== 'OPEN') {
-                    runningBalance += (parseFloat(t.pnlVal) || 0);
-                    labels.push(`#${idx + 1} (${t.pair})`);
-                    data.push(runningBalance);
-                }
-            });
-
-            equityChartInstance.data.labels = labels;
-            equityChartInstance.data.datasets[0].data = data;
-            equityChartInstance.update();
+            const setupSelect = document.getElementById('filterSetup');
+            setupSelect.innerHTML = '<option value="ALL">Semua Strategi</option>' + 
+                setups.map(s => `<option value="${s}">${s}</option>`).join('');
         }
 
-        // ================= FILTER & TABLE RENDER =================
+        function renderTrades() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const selectedPair = document.getElementById('filterPair').value;
+            const selectedSetup = document.getElementById('filterSetup').value;
 
-        function filterTrades() {
-            const searchPair = document.getElementById('searchPairInput').value.toUpperCase().trim();
-            const filterStatus = document.getElementById('filterStatus').value;
-            const filterStrategy = document.getElementById('filterStrategy').value;
+            const filtered = trades.filter(t => {
+                const matchSearch = t.pair.toLowerCase().includes(search) || (t.notes && t.notes.toLowerCase().includes(search));
+                const matchPair = selectedPair === 'ALL' || t.pair.toUpperCase() === selectedPair;
+                const matchSetup = selectedSetup === 'ALL' || t.setup === selectedSetup;
+                return matchSearch && matchPair && matchSetup;
+            }).sort((a, b) => new Date(b.date) - new Date(a.date));
 
-            let filtered = appState.trades;
-
-            // Account filter
-            if (appState.selectedAccountId !== 'ALL') {
-                filtered = filtered.filter(t => t.accountId === appState.selectedAccountId);
-            }
-
-            // Pair search
-            if (searchPair) {
-                filtered = filtered.filter(t => t.pair.toUpperCase().includes(searchPair));
-            }
-
-            // Status filter
-            if (filterStatus !== 'ALL') {
-                filtered = filtered.filter(t => t.status === filterStatus);
-            }
-
-            // Strategy filter
-            if (filterStrategy !== 'ALL') {
-                filtered = filtered.filter(t => t.strategy === filterStrategy);
-            }
-
-            renderTradesTable(filtered);
-        }
-
-        function resetFilters() {
-            document.getElementById('searchPairInput').value = '';
-            document.getElementById('filterStatus').value = 'ALL';
-            document.getElementById('filterStrategy').value = 'ALL';
-            filterTrades();
-        }
-
-        function renderTradesTable(trades) {
-            const tbody = document.getElementById('tradesTableBody');
+            document.getElementById('filteredCount').textContent = filtered.length;
+            const tbody = document.getElementById('tradeTableBody');
             const emptyState = document.getElementById('emptyState');
 
-            if (trades.length === 0) {
+            if (filtered.length === 0) {
                 tbody.innerHTML = '';
                 emptyState.classList.remove('hidden');
                 return;
             }
 
             emptyState.classList.add('hidden');
-            let html = '';
+            tbody.innerHTML = filtered.map(t => {
+                const isProfit = t.pnl > 0;
+                const isLoss = t.pnl < 0;
+                const pnlClass = isProfit ? 'text-emerald-400 font-bold' : (isLoss ? 'text-rose-400 font-bold' : 'text-gray-400');
+                const typeClass = t.type === 'LONG' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20';
 
-            trades.forEach(trade => {
-                const acc = appState.accounts.find(a => a.id === trade.accountId);
-                const accName = acc ? acc.name : 'Unknown';
-
-                let statusBadge = '';
-                let pnlColor = 'text-slate-300';
-
-                if (trade.status === 'WIN') {
-                    statusBadge = `<span class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">WIN</span>`;
-                    pnlColor = 'text-emerald-400 font-bold';
-                } else if (trade.status === 'LOSS') {
-                    statusBadge = `<span class="bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[10px] font-bold px-2 py-0.5 rounded">LOSS</span>`;
-                    pnlColor = 'text-rose-400 font-bold';
-                } else if (trade.status === 'BE') {
-                    statusBadge = `<span class="bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[10px] font-bold px-2 py-0.5 rounded">BE</span>`;
-                    pnlColor = 'text-amber-400';
-                } else {
-                    statusBadge = `<span class="bg-blue-500/20 text-blue-400 border border-blue-500/30 text-[10px] font-bold px-2 py-0.5 rounded">OPEN</span>`;
-                }
-
-                const buySellBadge = trade.buySell === 'BUY' 
-                    ? `<span class="text-emerald-400 font-bold">BUY</span>` 
-                    : `<span class="text-rose-400 font-bold">SELL</span>`;
-
-                html += `
-                    <tr class="hover:bg-slate-800/40 transition border-b border-slate-800/50">
-                        <td class="py-3 px-4">
-                            <div class="font-medium text-white text-xs">${trade.date || 'N/A'}</div>
-                            <div class="text-[10px] text-brand-400">${accName}</div>
-                        </td>
-                        <td class="py-3 px-4 font-bold text-white">${trade.pair}</td>
-                        <td class="py-3 px-4">${buySellBadge}</td>
-                        <td class="py-3 px-4 font-semibold">${trade.lot}</td>
-                        <td class="py-3 px-4 text-xs">
-                            <div class="text-slate-200">${trade.entryPrice}</div>
-                            <div class="text-slate-400">${trade.exitPrice || '-'}</div>
+                return `
+                    <tr class="hover:bg-dark-700/40 transition border-b border-gray-800/60">
+                        <td class="py-3 px-4 whitespace-nowrap text-xs text-gray-400">${formatDate(t.date)}</td>
+                        <td class="py-3 px-4 font-bold text-gray-100 uppercase">${t.pair}</td>
+                        <td class="py-3 px-4 whitespace-nowrap">
+                            <span class="px-2.5 py-1 text-xs font-semibold rounded-lg border ${typeClass}">${t.type}</span>
                         </td>
                         <td class="py-3 px-4 text-xs">
-                            <div class="text-emerald-400/80">TP: ${trade.tp || '-'}</div>
-                            <div class="text-rose-400/80">SL: ${trade.sl || '-'}</div>
+                            <div><span class="text-gray-500">In:</span> $${t.entry}</div>
+                            <div><span class="text-gray-500">Out:</span> $${t.exit}</div>
                         </td>
-                        <td class="py-3 px-4 ${pnlColor}">${trade.pnlPct ? (trade.pnlPct >= 0 ? '+' : '') + trade.pnlPct + '%' : '-'}</td>
-                        <td class="py-3 px-4 ${pnlColor}">${trade.pnlVal ? (trade.pnlVal >= 0 ? '+' : '') + formatUSD(trade.pnlVal) : '-'}</td>
-                        <td class="py-3 px-4">${statusBadge}</td>
-                        <td class="py-3 px-4 text-xs text-slate-300 font-medium">${trade.strategy}</td>
-                        <td class="py-3 px-4 text-center">
-                            ${trade.screenshot ? `
-                                <button onclick="openDetailModal('${trade.id}')" class="text-brand-400 hover:text-brand-300 p-1">
-                                    <i class="fa-solid fa-image"></i>
-                                </button>
-                            ` : `<span class="text-slate-600">-</span>`}
+                        <td class="py-3 px-4 text-xs text-gray-300">${t.size} Lot</td>
+                        <td class="py-3 px-4 text-xs font-semibold text-gray-300">1 : ${t.rr || '0'}</td>
+                        <td class="py-3 px-4 whitespace-nowrap ${pnlClass}">
+                            ${t.pnl >= 0 ? '+' : ''}$${t.pnl ? t.pnl.toFixed(2) : '0.00'}
                         </td>
-                        <td class="py-3 px-4 text-center space-x-1">
-                            <button onclick="openDetailModal('${trade.id}')" title="Detail" class="p-1 text-slate-400 hover:text-white"><i class="fa-solid fa-eye"></i></button>
-                            <button onclick="editTrade('${trade.id}')" title="Edit" class="p-1 text-amber-400 hover:text-amber-300"><i class="fa-solid fa-pen"></i></button>
-                            <button onclick="deleteTrade('${trade.id}')" title="Hapus" class="p-1 text-rose-400 hover:text-rose-300"><i class="fa-solid fa-trash"></i></button>
+                        <td class="py-3 px-4 text-xs">
+                            <span class="bg-gray-800 text-gray-300 px-2 py-1 rounded-md border border-gray-700">${t.setup || '-'}</span>
+                        </td>
+                        <td class="py-3 px-4 text-xs text-gray-400">${t.emotion || '-'}</td>
+                        <td class="py-3 px-4 text-center whitespace-nowrap">
+                            <button onclick="editTrade('${t.id}')" class="text-gray-400 hover:text-blue-400 p-1 mr-2 transition" title="Edit">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </button>
+                            <button onclick="deleteTrade('${t.id}')" class="text-gray-400 hover:text-rose-400 p-1 transition" title="Hapus">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
                         </td>
                     </tr>
                 `;
-            });
-
-            tbody.innerHTML = html;
+            }).join('');
         }
 
-        // ================= SAVE & EDIT TRADE =================
-
-        function openTradeModal(tradeId = null) {
-            renderAccountDropdown(); // refresh target accounts
-            const modal = document.getElementById('tradeModal');
-            const form = document.getElementById('tradeForm');
-            form.reset();
-
-            if (tradeId) {
-                const trade = appState.trades.find(t => t.id === tradeId);
-                if (trade) {
-                    document.getElementById('modalTitle').innerText = 'Edit Trade';
-                    document.getElementById('tradeId').value = trade.id;
-                    document.getElementById('formAccountSelect').value = trade.accountId;
-                    document.getElementById('fieldPair').value = trade.pair;
-                    document.getElementById('fieldBuySell').value = trade.buySell;
-                    document.getElementById('fieldLot').value = trade.lot;
-                    document.getElementById('fieldHargaEntry').value = trade.entryPrice;
-                    document.getElementById('fieldHargaExit').value = trade.exitPrice || '';
-                    document.getElementById('fieldTP').value = trade.tp || '';
-                    document.getElementById('fieldSL').value = trade.sl || '';
-                    document.getElementById('fieldPnLPct').value = trade.pnlPct || '';
-                    document.getElementById('fieldPnLVal').value = trade.pnlVal || '';
-                    document.getElementById('fieldStatus').value = trade.status;
-                    document.getElementById('fieldStrategy').value = trade.strategy;
-                    document.getElementById('fieldNotes').value = trade.notes || '';
-                    document.getElementById('fieldScreenshot').value = trade.screenshot || '';
-                }
-            } else {
-                document.getElementById('modalTitle').innerText = 'Tambah Trade Baru';
-                document.getElementById('tradeId').value = '';
-                if (appState.selectedAccountId !== 'ALL') {
-                    document.getElementById('formAccountSelect').value = appState.selectedAccountId;
-                }
-            }
-
-            modal.classList.remove('hidden');
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.remove('hidden');
         }
 
-        function closeTradeModal() {
-            document.getElementById('tradeModal').classList.add('hidden');
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+            if (modalId === 'addModal') resetForm();
         }
 
-        function calculateEstimates() {
-            const entry = parseFloat(document.getElementById('fieldHargaEntry').value);
-            const exit = parseFloat(document.getElementById('fieldHargaExit').value);
-            const lot = parseFloat(document.getElementById('fieldLot').value) || 0.1;
-            const type = document.getElementById('fieldBuySell').value;
+        function resetForm() {
+            document.getElementById('tradeForm').reset();
+            document.getElementById('tradeId').value = '';
+            document.getElementById('modalTitle').textContent = 'Tambah Jurnal Trading Baru';
+            document.getElementById('fieldDate').value = new Date().toISOString().slice(0, 16);
+            document.getElementById('previewPnL').textContent = '$0.00';
+            document.getElementById('previewRR').textContent = '1 : 0.00';
+        }
 
-            if (!isNaN(entry) && !isNaN(exit) && entry > 0) {
-                let diff = type === 'BUY' ? (exit - entry) : (entry - exit);
-                // Simple estimate logic
-                let estimatedPnlVal = diff * lot * 100; // rough standard lot contract sizing multiplier
-                let pct = (diff / entry) * 100;
+        function autoCalcPnL() {
+            const type = document.getElementById('fieldType').value;
+            const size = parseFloat(document.getElementById('fieldSize').value) || 0;
+            const entry = parseFloat(document.getElementById('fieldEntry').value) || 0;
+            const exit = parseFloat(document.getElementById('fieldExit').value) || 0;
+            const sl = parseFloat(document.getElementById('fieldSL').value) || 0;
 
-                if (!document.getElementById('fieldPnLVal').value) {
-                    document.getElementById('fieldPnLVal').value = estimatedPnlVal.toFixed(2);
-                }
-                if (!document.getElementById('fieldPnLPct').value) {
-                    document.getElementById('fieldPnLPct').value = pct.toFixed(2);
+            if (entry && exit && size) {
+                let diff = type === 'LONG' ? (exit - entry) : (entry - exit);
+                let pnl = diff * size;
+                
+                const pnlEl = document.getElementById('previewPnL');
+                pnlEl.textContent = `${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}`;
+                pnlEl.className = `font-bold text-sm ${pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+
+                if (sl) {
+                    let risk = Math.abs(entry - sl);
+                    let reward = Math.abs(exit - entry);
+                    let rr = risk > 0 ? (reward / risk).toFixed(2) : '0.00';
+                    document.getElementById('previewRR').textContent = `1 : ${rr}`;
                 }
             }
         }
 
-        function saveTrade(e) {
+        async function handleFormSubmit(e) {
             e.preventDefault();
 
-            const tradeId = document.getElementById('tradeId').value;
-            const accountId = document.getElementById('formAccountSelect').value;
+            const id = document.getElementById('tradeId').value || Date.now().toString();
+            const date = document.getElementById('fieldDate').value;
             const pair = document.getElementById('fieldPair').value.toUpperCase().trim();
-            const buySell = document.getElementById('fieldBuySell').value;
-            const lot = parseFloat(document.getElementById('fieldLot').value);
-            const entryPrice = parseFloat(document.getElementById('fieldHargaEntry').value);
-            const exitPrice = parseFloat(document.getElementById('fieldHargaExit').value) || null;
-            const tp = parseFloat(document.getElementById('fieldTP').value) || null;
-            const sl = parseFloat(document.getElementById('fieldSL').value) || null;
-            const pnlPct = parseFloat(document.getElementById('fieldPnLPct').value) || null;
-            const pnlVal = parseFloat(document.getElementById('fieldPnLVal').value) || null;
-            const status = document.getElementById('fieldStatus').value;
-            const strategy = document.getElementById('fieldStrategy').value.trim();
+            const type = document.getElementById('fieldType').value;
+            const size = parseFloat(document.getElementById('fieldSize').value);
+            const entry = parseFloat(document.getElementById('fieldEntry').value);
+            const exit = parseFloat(document.getElementById('fieldExit').value);
+            const sl = parseFloat(document.getElementById('fieldSL').value) || 0;
+            const setup = document.getElementById('fieldSetup').value.trim();
+            const emotion = document.getElementById('fieldEmotion').value;
             const notes = document.getElementById('fieldNotes').value.trim();
-            const screenshot = document.getElementById('fieldScreenshot').value.trim();
 
-            const now = new Date();
-            const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+            let diff = type === 'LONG' ? (exit - entry) : (entry - exit);
+            let pnl = diff * size;
 
-            if (tradeId) {
-                // Update
-                const index = appState.trades.findIndex(t => t.id === tradeId);
-                if (index !== -1) {
-                    appState.trades[index] = {
-                        ...appState.trades[index],
-                        accountId, pair, buySell, lot, entryPrice, exitPrice, tp, sl,
-                        pnlPct, pnlVal, status, strategy, notes, screenshot
-                    };
-                }
-            } else {
-                // Insert New
-                const newTrade = {
-                    id: 'tr-' + Date.now(),
-                    accountId, date: dateStr, pair, buySell, lot, entryPrice, exitPrice, tp, sl,
-                    pnlPct, pnlVal, status, strategy, notes, screenshot
-                };
-                appState.trades.unshift(newTrade);
+            let rr = 0;
+            if (sl > 0) {
+                let risk = Math.abs(entry - sl);
+                let reward = Math.abs(exit - entry);
+                rr = risk > 0 ? parseFloat((reward / risk).toFixed(2)) : 0;
             }
 
-            saveStateToLocalStorage();
+            const tradeObj = { id, date, pair, type, size, entry, exit, sl, pnl, rr, setup, emotion, notes };
+
+            const existingIndex = trades.findIndex(t => t.id === id);
+            if (existingIndex > -1) {
+                trades[existingIndex] = tradeObj;
+                showToast('Jurnal trading berhasil diperbarui!');
+            } else {
+                trades.push(tradeObj);
+                showToast('Jurnal trading baru tersimpan!');
+            }
+
+            saveTradesToLocalStorage();
+            await saveTradeToCloud(tradeObj);
             updateDashboard();
-            filterTrades();
-            closeTradeModal();
+            populateFilterOptions();
+            renderTrades();
+            closeModal('addModal');
         }
 
         function editTrade(id) {
-            openTradeModal(id);
+            const t = trades.find(item => item.id === id);
+            if (!t) return;
+
+            document.getElementById('tradeId').value = t.id;
+            document.getElementById('fieldDate').value = t.date;
+            document.getElementById('fieldPair').value = t.pair;
+            document.getElementById('fieldType').value = t.type;
+            document.getElementById('fieldSize').value = t.size;
+            document.getElementById('fieldEntry').value = t.entry;
+            document.getElementById('fieldExit').value = t.exit;
+            document.getElementById('fieldSL').value = t.sl || '';
+            document.getElementById('fieldSetup').value = t.setup || '';
+            document.getElementById('fieldEmotion').value = t.emotion || 'Disciplined';
+            document.getElementById('fieldNotes').value = t.notes || '';
+
+            document.getElementById('modalTitle').textContent = 'Edit Jurnal Trading';
+            autoCalcPnL();
+            openModal('addModal');
         }
 
         function deleteTrade(id) {
-            if (confirm('Hapus pencatatan trade ini?')) {
-                appState.trades = appState.trades.filter(t => t.id !== id);
-                saveStateToLocalStorage();
-                updateDashboard();
-                filterTrades();
-            }
+            tradeToDeleteId = id;
+            openModal('deleteModal');
         }
 
-        // ================= DETAIL MODAL =================
-
-        function openDetailModal(id) {
-            const trade = appState.trades.find(t => t.id === id);
-            if (!trade) return;
-
-            document.getElementById('detailPairBadge').innerText = trade.pair;
-            const typeBadge = document.getElementById('detailTypeBadge');
-            typeBadge.innerText = trade.buySell;
-            typeBadge.className = trade.buySell === 'BUY' ? 'bg-emerald-500/20 text-emerald-400 font-bold text-xs px-2 py-0.5 rounded-md' : 'bg-rose-500/20 text-rose-400 font-bold text-xs px-2 py-0.5 rounded-md';
-
-            document.getElementById('detailLot').innerText = trade.lot;
-            document.getElementById('detailPrice').innerText = `${trade.entryPrice} / ${trade.exitPrice || '-'}`;
-            document.getElementById('detailTPSL').innerText = `${trade.tp || '-'} / ${trade.sl || '-'}`;
-            
-            const pnlEl = document.getElementById('detailPnL');
-            pnlEl.innerText = `${trade.pnlVal ? formatUSD(trade.pnlVal) : '$0'} (${trade.pnlPct || 0}%)`;
-            pnlEl.className = `font-bold ${trade.pnlVal > 0 ? 'text-emerald-400' : (trade.pnlVal < 0 ? 'text-rose-400' : 'text-slate-300')}`;
-
-            document.getElementById('detailStrategy').innerText = trade.strategy;
-            document.getElementById('detailNotes').innerText = trade.notes || 'Tidak ada catatan.';
-
-            const imgContainer = document.getElementById('detailScreenshotContainer');
-            const img = document.getElementById('detailScreenshotImg');
-            const noImg = document.getElementById('detailNoScreenshot');
-
-            if (trade.screenshot) {
-                img.src = trade.screenshot;
-                img.classList.remove('hidden');
-                noImg.classList.add('hidden');
-            } else {
-                img.classList.add('hidden');
-                noImg.classList.remove('hidden');
-            }
-
-            document.getElementById('detailModal').classList.remove('hidden');
+        async function executeDeleteTrade() {
+            if (!tradeToDeleteId) return;
+            const id = tradeToDeleteId;
+            trades = trades.filter(t => t.id !== id);
+            saveTradesToLocalStorage();
+            await deleteTradeFromCloud(id);
+            updateDashboard();
+            populateFilterOptions();
+            renderTrades();
+            closeModal('deleteModal');
+            tradeToDeleteId = null;
+            showToast('Data trade berhasil dihapus', 'error');
         }
 
-        function closeDetailModal() {
-            document.getElementById('detailModal').classList.add('hidden');
+        function calculateRisk() {
+            const account = parseFloat(document.getElementById('calcAccount').value) || 0;
+            const riskPct = parseFloat(document.getElementById('calcRiskPct').value) || 0;
+            const entry = parseFloat(document.getElementById('calcEntry').value) || 0;
+            const sl = parseFloat(document.getElementById('calcSL').value) || 0;
+
+            const riskAmount = (account * (riskPct / 100));
+            const distance = Math.abs(entry - sl);
+            const units = distance > 0 ? (riskAmount / distance) : 0;
+
+            document.getElementById('calcRiskAmount').textContent = `$${riskAmount.toFixed(2)}`;
+            document.getElementById('calcDistance').textContent = `${distance.toFixed(2)} pts`;
+            document.getElementById('calcUnits').textContent = `${units.toFixed(2)} Units/Lot`;
         }
 
-        // ================= EKSPOR / IMPOR DATA =================
-
-        function toggleDataMenu() {
-            const menu = document.getElementById('dataMenu');
-            menu.classList.toggle('hidden');
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(trades, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `TradeLog_Backup_${new Date().toISOString().slice(0, 10)}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+            showToast('Backup data berhasil di-download!');
         }
 
-        function exportDataJSON() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appState, null, 2));
-            const dlAnchorElem = document.createElement('a');
-            dlAnchorElem.setAttribute("href", dataStr);
-            dlAnchorElem.setAttribute("download", `Jurnal_Trading_Export_${new Date().toISOString().slice(0,10)}.json`);
-            dlAnchorElem.click();
-        }
-
-        function exportDataCSV() {
-            let csv = "ID,Account,Date,Pair,BuySell,Lot,EntryPrice,ExitPrice,TP,SL,PnLPct,PnLVal,Status,Strategy,Notes\n";
-            appState.trades.forEach(t => {
-                const acc = appState.accounts.find(a => a.id === t.accountId);
-                const accName = acc ? acc.name : '';
-                csv += `"${t.id}","${accName}","${t.date}","${t.pair}","${t.buySell}",${t.lot},${t.entryPrice},${t.exitPrice||''},${t.tp||''},${t.sl||''},${t.pnlPct||''},${t.pnlVal||''},"${t.status}","${t.strategy}","${(t.notes||'').replace(/"/g, '""')}"\n`;
-            });
-
-            const dataStr = "data:text/csv;charset=utf-8," + encodeURIComponent(csv);
-            const dlAnchorElem = document.createElement('a');
-            dlAnchorElem.setAttribute("href", dataStr);
-            dlAnchorElem.setAttribute("download", `Jurnal_Trading_${new Date().toISOString().slice(0,10)}.csv`);
-            dlAnchorElem.click();
-        }
-
-        function importDataJSON(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
+        async function importData(event) {
+            const fileReader = new FileReader();
+            fileReader.onload = async function(e) {
                 try {
-                    const importedState = JSON.parse(e.target.result);
-                    if (importedState.accounts && importedState.trades) {
-                        appState = importedState;
-                        saveStateToLocalStorage();
-                        renderAccountDropdown();
+                    const importedTrades = JSON.parse(e.target.result);
+                    if (Array.isArray(importedTrades)) {
+                        trades = importedTrades;
+                        saveTradesToLocalStorage();
+                        for (const item of importedTrades) {
+                            await saveTradeToCloud(item);
+                        }
                         updateDashboard();
-                        filterTrades();
-                        alert('Data jurnal trading berhasil diimpor!');
+                        populateFilterOptions();
+                        renderTrades();
+                        showToast('Data berhasil di-import & disinkron ke cloud!');
                     } else {
-                        alert('Format file JSON tidak valid.');
+                        showToast('Format file JSON tidak valid!', 'error');
                     }
                 } catch (err) {
-                    alert('Gagal membaca file JSON.');
+                    showToast('Gagal membaca file JSON!', 'error');
                 }
             };
-            reader.readAsText(file);
+            if (event.target.files[0]) {
+                fileReader.readAsText(event.target.files[0]);
+            }
         }
 
-        // Helper Format USD
-        function formatUSD(amount) {
-            return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount || 0);
+        function formatDate(dateString) {
+            const d = new Date(dateString);
+            return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
         }
 
-        // Window onclick bindings
-        window.switchAccount = switchAccount;
-        window.openAccountModal = openAccountModal;
-        window.closeAccountModal = closeAccountModal;
-        window.addNewAccount = addNewAccount;
-        window.deleteAccount = deleteAccount;
-        window.openEditModalAwal = openEditModalAwal;
-        window.closeEditModalAwal = closeEditModalAwal;
-        window.saveModalAwal = saveModalAwal;
-        window.filterTrades = filterTrades;
-        window.resetFilters = resetFilters;
-        window.openTradeModal = openTradeModal;
-        window.closeTradeModal = closeTradeModal;
-        window.calculateEstimates = calculateEstimates;
-        window.saveTrade = saveTrade;
+        // Attach global window handlers
+        window.switchTab = switchTab;
+        window.openModal = openModal;
+        window.closeModal = closeModal;
+        window.handleFormSubmit = handleFormSubmit;
         window.editTrade = editTrade;
         window.deleteTrade = deleteTrade;
-        window.openDetailModal = openDetailModal;
-        window.closeDetailModal = closeDetailModal;
-        window.toggleDataMenu = toggleDataMenu;
-        window.exportDataJSON = exportDataJSON;
-        window.exportDataCSV = exportDataCSV;
-        window.importDataJSON = importDataJSON;
-        window.loginWithGoogle = loginWithGoogle;
-
-        // Close dropdown when clicking outside
-        window.onclick = function(event) {
-            if (!event.target.closest('.relative')) {
-                const dataMenu = document.getElementById('dataMenu');
-                if (dataMenu && !dataMenu.classList.contains('hidden')) {
-                    dataMenu.classList.add('hidden');
-                }
-                const userMenu = document.getElementById('userMenu');
-                if (userMenu && !userMenu.classList.contains('hidden')) {
-                    userMenu.classList.add('hidden');
-                }
-            }
-        };
+        window.executeDeleteTrade = executeDeleteTrade;
+        window.autoCalcPnL = autoCalcPnL;
+        window.calculateRisk = calculateRisk;
+        window.exportData = exportData;
+        window.importData = importData;
+        window.renderTrades = renderTrades;
     </script>
 </body>
 </html>
