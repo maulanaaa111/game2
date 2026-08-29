@@ -68,6 +68,17 @@
 
             <!-- Action Buttons & User Menu -->
             <div class="flex items-center gap-3">
+                <!-- Multi-Account Selector Dropdown -->
+                <div class="relative flex items-center bg-dark-700/80 rounded-xl border border-gray-700 p-1">
+                    <i class="fa-solid fa-wallet text-blue-400 text-xs ml-2"></i>
+                    <select id="headerAccountSelect" onchange="switchActiveAccount(this.value)" class="bg-transparent text-xs text-gray-200 py-1 pl-2 pr-6 font-semibold focus:outline-none cursor-pointer">
+                        <option value="ALL">Semua Akun (Gabungan)</option>
+                    </select>
+                    <button onclick="openModal('accountModal')" title="Kelola / Tambah Akun Trading" class="p-1 hover:bg-gray-600 rounded-lg text-gray-400 hover:text-white transition ml-1">
+                        <i class="fa-solid fa-gear text-xs"></i>
+                    </button>
+                </div>
+
                 <div id="cloudStatus" class="hidden sm:flex items-center">
                     <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20">
                         <i class="fa-solid fa-spinner fa-spin text-xs"></i> Connecting...
@@ -418,12 +429,18 @@
                         <input type="datetime-local" id="fieldDate" required class="w-full bg-dark-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-blue-500">
                     </div>
                     <div>
-                        <label class="block text-xs font-medium text-gray-400 mb-1">Pair / Aset (Misal: BTC/USDT, XAU/USD)</label>
-                        <input type="text" id="fieldPair" placeholder="XAU/USD" required class="w-full bg-dark-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-200 uppercase focus:outline-none focus:border-blue-500">
+                        <label class="block text-xs font-medium text-gray-400 mb-1">Pilih Akun Trading</label>
+                        <select id="fieldAccount" required class="w-full bg-dark-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-blue-500">
+                            <!-- Populated dynamically via JS -->
+                        </select>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-400 mb-1">Pair / Aset (Misal: BTC/USDT, XAU/USD)</label>
+                        <input type="text" id="fieldPair" placeholder="XAU/USD" required class="w-full bg-dark-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-200 uppercase focus:outline-none focus:border-blue-500">
+                    </div>
                     <div>
                         <label class="block text-xs font-medium text-gray-400 mb-1">Arah Transaksi</label>
                         <select id="fieldType" class="w-full bg-dark-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-blue-500">
@@ -431,6 +448,9 @@
                             <option value="SHORT">SELL / SHORT</option>
                         </select>
                     </div>
+                </div>
+
+                <div class="grid grid-cols-1 gap-4">
                     <div>
                         <label class="block text-xs font-medium text-gray-400 mb-1">Ukuran Posisi / Lot</label>
                         <input type="number" id="fieldSize" step="any" placeholder="1.0" required class="w-full bg-dark-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-blue-500">
@@ -512,6 +532,48 @@
         </div>
     </div>
 
+    <!-- Modal Kelola Multi-Akun Trading -->
+    <div id="accountModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm overflow-y-auto">
+        <div class="bg-dark-800 border border-gray-700 rounded-2xl w-full max-w-md p-6 shadow-2xl relative">
+            <div class="flex justify-between items-center mb-4 border-b border-gray-700 pb-3">
+                <h3 class="text-lg font-bold text-gray-100"><i class="fa-solid fa-wallet text-blue-500 mr-2"></i>Kelola Akun Trading</h3>
+                <button onclick="closeModal('accountModal')" class="text-gray-400 hover:text-white p-1 rounded-lg">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- List Existing Accounts -->
+            <div class="space-y-3 mb-5 max-h-48 overflow-y-auto pr-1" id="accountListContainer">
+                <!-- Dynamic account list item -->
+            </div>
+
+            <!-- Add / Edit Account Form -->
+            <form id="accountForm" onsubmit="handleAccountFormSubmit(event)" class="bg-dark-900 p-4 rounded-xl border border-gray-700/60 space-y-3">
+                <h4 id="accountFormTitle" class="text-xs font-bold text-gray-300 uppercase tracking-wider">Tambah Akun Trading Baru</h4>
+                <input type="hidden" id="editAccountId">
+
+                <div>
+                    <label class="block text-xs font-medium text-gray-400 mb-1">Nama Akun / Deskripsi</label>
+                    <input type="text" id="accName" placeholder="Contoh: Akun Utama FTMO 100K" required class="w-full bg-dark-800 border border-gray-700 rounded-xl px-3 py-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-400 mb-1">Modal Awal ($)</label>
+                        <input type="number" id="accBalance" placeholder="10000" step="any" required class="w-full bg-dark-800 border border-gray-700 rounded-xl px-3 py-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-400 mb-1">Tipe / Broker</label>
+                        <input type="text" id="accBroker" placeholder="Forex / Crypto / Prop" class="w-full bg-dark-800 border border-gray-700 rounded-xl px-3 py-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500">
+                    </div>
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="resetAccountForm()" class="px-3 py-1.5 rounded-lg text-xs text-gray-400 hover:bg-dark-700 transition">Batal</button>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-1.5 rounded-lg text-xs font-semibold shadow transition">Simpan Akun</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Firebase SDK & Application Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
@@ -557,17 +619,26 @@
 
         let currentUser = null;
         let tradesCollectionRef = null;
-        let unsubscribeFirestore = null;
+        let accountsCollectionRef = null;
+        let unsubscribeTrades = null;
+        let unsubscribeAccounts = null;
         let tradeToDeleteId = null;
         let isRegisterMode = false;
 
-        // Data Store
+        // Active selected account state ('ALL' or account ID)
+        let currentAccountId = 'ALL';
+
+        // Data Stores
+        let accounts = [
+            { id: 'acc_default', name: 'Akun Utama', balance: 10000, broker: 'Forex' }
+        ];
         let trades = [];
 
         // Sample initial data if database is empty
         const initialSampleData = [
             {
                 id: '1',
+                accountId: 'acc_default',
                 date: '2026-02-25T14:30',
                 pair: 'XAU/USD',
                 type: 'LONG',
@@ -583,6 +654,7 @@
             },
             {
                 id: '2',
+                accountId: 'acc_default',
                 date: '2026-02-26T09:15',
                 pair: 'BTC/USDT',
                 type: 'SHORT',
@@ -598,6 +670,7 @@
             },
             {
                 id: '3',
+                accountId: 'acc_default',
                 date: '2026-02-27T16:00',
                 pair: 'EUR/USD',
                 type: 'LONG',
@@ -642,24 +715,41 @@
 
             if (user) {
                 const userId = user.uid;
-                // Strict path convention: /artifacts/{appId}/users/{userId}/trades
                 tradesCollectionRef = collection(db, 'artifacts', appId, 'users', userId, 'trades');
+                accountsCollectionRef = collection(db, 'artifacts', appId, 'users', userId, 'accounts');
 
                 const statusEl = document.getElementById('cloudStatus');
                 if (statusEl) {
                     statusEl.innerHTML = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" title="User ID: ${userId}"><i class="fa-solid fa-cloud-check text-xs"></i> Cloud Live</span>`;
                 }
 
-                // Subscribe to Firestore updates (in-memory sorting & filtering)
-                if (unsubscribeFirestore) unsubscribeFirestore();
-                unsubscribeFirestore = onSnapshot(tradesCollectionRef, (snapshot) => {
+                // Subscribe to Accounts Cloud Collection
+                if (unsubscribeAccounts) unsubscribeAccounts();
+                unsubscribeAccounts = onSnapshot(accountsCollectionRef, (snapshot) => {
+                    const fetchedAccs = [];
+                    snapshot.forEach((docSnap) => {
+                        fetchedAccs.push({ id: docSnap.id, ...docSnap.data() });
+                    });
+
+                    if (fetchedAccs.length === 0 && accounts.length === 0) {
+                        const defaultAcc = { id: 'acc_default', name: 'Akun Utama', balance: 10000, broker: 'Forex' };
+                        setDoc(doc(accountsCollectionRef, defaultAcc.id), defaultAcc);
+                    } else if (fetchedAccs.length > 0) {
+                        accounts = fetchedAccs;
+                        saveAccountsToLocalStorage();
+                        renderAccountOptions();
+                    }
+                }, (err) => console.error("Accounts Firestore error:", err));
+
+                // Subscribe to Trades Cloud Collection
+                if (unsubscribeTrades) unsubscribeTrades();
+                unsubscribeTrades = onSnapshot(tradesCollectionRef, (snapshot) => {
                     const fetchedTrades = [];
                     snapshot.forEach((docSnap) => {
                         fetchedTrades.push({ id: docSnap.id, ...docSnap.data() });
                     });
 
                     if (fetchedTrades.length === 0 && trades.length === 0) {
-                        // Seed initial sample data for new user database
                         initialSampleData.forEach(async (sample) => {
                             await setDoc(doc(tradesCollectionRef, sample.id), sample);
                         });
@@ -685,7 +775,9 @@
         // Initialize App on DOM Loaded
         window.addEventListener('DOMContentLoaded', () => {
             initAuth();
+            loadAccountsFromLocalStorage();
             loadTradesFromLocalStorage();
+            renderAccountOptions();
             initCharts();
             updateDashboard();
             populateFilterOptions();
@@ -702,6 +794,153 @@
             document.getElementById('authModeLogin').addEventListener('click', () => setAuthMode(false));
             document.getElementById('authModeRegister').addEventListener('click', () => setAuthMode(true));
         });
+
+        function loadAccountsFromLocalStorage() {
+            const saved = localStorage.getItem('tradelog_accounts');
+            if (saved) {
+                try {
+                    accounts = JSON.parse(saved);
+                } catch (e) {
+                    accounts = [{ id: 'acc_default', name: 'Akun Utama', balance: 10000, broker: 'Forex' }];
+                }
+            }
+        }
+
+        function saveAccountsToLocalStorage() {
+            localStorage.setItem('tradelog_accounts', JSON.stringify(accounts));
+        }
+
+        async function saveAccountToCloud(accObj) {
+            if (!currentUser || !accountsCollectionRef) return;
+            try {
+                await setDoc(doc(accountsCollectionRef, accObj.id), accObj);
+            } catch (err) {
+                console.error("Cloud account save error:", err);
+            }
+        }
+
+        async function deleteAccountFromCloud(id) {
+            if (!currentUser || !accountsCollectionRef) return;
+            try {
+                await deleteDoc(doc(accountsCollectionRef, id));
+            } catch (err) {
+                console.error("Cloud account delete error:", err);
+            }
+        }
+
+        function renderAccountOptions() {
+            const headerSelect = document.getElementById('headerAccountSelect');
+            const fieldSelect = document.getElementById('fieldAccount');
+
+            const optionsHtml = accounts.map(a => `<option value="${a.id}">${a.name} ($${a.balance.toLocaleString()})</option>`).join('');
+
+            headerSelect.innerHTML = `<option value="ALL">Semua Akun (Gabungan)</option>` + optionsHtml;
+            headerSelect.value = currentAccountId;
+
+            fieldSelect.innerHTML = optionsHtml;
+            if (currentAccountId !== 'ALL' && accounts.some(a => a.id === currentAccountId)) {
+                fieldSelect.value = currentAccountId;
+            }
+
+            renderAccountModalList();
+        }
+
+        function renderAccountModalList() {
+            const container = document.getElementById('accountListContainer');
+            if (accounts.length === 0) {
+                container.innerHTML = `<p class="text-xs text-gray-500 text-center py-2">Belum ada akun trading.</p>`;
+                return;
+            }
+
+            container.innerHTML = accounts.map(a => `
+                <div class="flex items-center justify-between bg-dark-900 p-3 rounded-xl border border-gray-700/60">
+                    <div>
+                        <div class="font-bold text-xs text-gray-200 flex items-center gap-2">
+                            ${a.name}
+                            ${a.broker ? `<span class="bg-gray-800 text-gray-400 px-1.5 py-0.5 rounded text-[10px] font-normal">${a.broker}</span>` : ''}
+                        </div>
+                        <div class="text-[11px] text-gray-400">Modal Awal: <span class="text-emerald-400 font-medium">$${Number(a.balance).toLocaleString()}</span></div>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <button onclick="editAccount('${a.id}')" class="text-gray-400 hover:text-blue-400 p-1.5 transition text-xs" title="Edit Akun">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
+                        ${accounts.length > 1 ? `
+                            <button onclick="deleteAccount('${a.id}')" class="text-gray-400 hover:text-rose-400 p-1.5 transition text-xs" title="Hapus Akun">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function switchActiveAccount(accId) {
+            currentAccountId = accId;
+            updateDashboard();
+            renderTrades();
+        }
+
+        async function handleAccountFormSubmit(e) {
+            e.preventDefault();
+            const id = document.getElementById('editAccountId').value || 'acc_' + Date.now();
+            const name = document.getElementById('accName').value.trim();
+            const balance = parseFloat(document.getElementById('accBalance').value) || 0;
+            const broker = document.getElementById('accBroker').value.trim();
+
+            const accObj = { id, name, balance, broker };
+            const index = accounts.findIndex(a => a.id === id);
+
+            if (index > -1) {
+                accounts[index] = accObj;
+                showToast('Akun trading diperbarui!');
+            } else {
+                accounts.push(accObj);
+                showToast('Akun trading baru berhasil ditambahkan!');
+            }
+
+            saveAccountsToLocalStorage();
+            await saveAccountToCloud(accObj);
+            renderAccountOptions();
+            resetAccountForm();
+            updateDashboard();
+        }
+
+        function editAccount(id) {
+            const acc = accounts.find(a => a.id === id);
+            if (!acc) return;
+            document.getElementById('editAccountId').value = acc.id;
+            document.getElementById('accName').value = acc.name;
+            document.getElementById('accBalance').value = acc.balance;
+            document.getElementById('accBroker').value = acc.broker || '';
+            document.getElementById('accountFormTitle').textContent = 'Edit Akun Trading';
+        }
+
+        async function deleteAccount(id) {
+            if (accounts.length <= 1) {
+                showToast('Minimal harus ada 1 akun trading!', 'error');
+                return;
+            }
+            accounts = accounts.filter(a => a.id !== id);
+            if (currentAccountId === id) currentAccountId = 'ALL';
+            saveAccountsToLocalStorage();
+            await deleteAccountFromCloud(id);
+            renderAccountOptions();
+            updateDashboard();
+            renderTrades();
+            showToast('Akun trading berhasil dihapus', 'error');
+        }
+
+        function resetAccountForm() {
+            document.getElementById('accountForm').reset();
+            document.getElementById('editAccountId').value = '';
+            document.getElementById('accountFormTitle').textContent = 'Tambah Akun Trading Baru';
+        }
+
+        function getFilteredTradesByAccount() {
+            if (currentAccountId === 'ALL') return trades;
+            return trades.filter(t => (t.accountId || 'acc_default') === currentAccountId);
+        }
 
         function updateUserUI(user) {
             const statusText = document.getElementById('userStatusText');
@@ -871,22 +1110,23 @@
         }
 
         function updateDashboard() {
-            const totalTrades = trades.length;
-            const wins = trades.filter(t => t.pnl > 0);
-            const losses = trades.filter(t => t.pnl < 0);
-            const beps = trades.filter(t => t.pnl === 0);
+            const activeTrades = getFilteredTradesByAccount();
+            const totalTrades = activeTrades.length;
+            const wins = activeTrades.filter(t => t.pnl > 0);
+            const losses = activeTrades.filter(t => t.pnl < 0);
+            const beps = activeTrades.filter(t => t.pnl === 0);
 
             const winCount = wins.length;
             const lossCount = losses.length;
             const winRate = totalTrades > 0 ? ((winCount / totalTrades) * 100).toFixed(1) : '0.0';
 
-            const totalPnL = trades.reduce((acc, t) => acc + (t.pnl || 0), 0);
+            const totalPnL = activeTrades.reduce((acc, t) => acc + (t.pnl || 0), 0);
             const grossProfit = wins.reduce((acc, t) => acc + t.pnl, 0);
             const grossLoss = Math.abs(losses.reduce((acc, t) => acc + t.pnl, 0));
             const profitFactor = grossLoss > 0 ? (grossProfit / grossLoss).toFixed(2) : (grossProfit > 0 ? 'INF' : '0.00');
 
-            const bestTrade = trades.length > 0 ? Math.max(...trades.map(t => t.pnl)) : 0;
-            const worstTrade = trades.length > 0 ? Math.min(...trades.map(t => t.pnl)) : 0;
+            const bestTrade = activeTrades.length > 0 ? Math.max(...activeTrades.map(t => t.pnl)) : 0;
+            const worstTrade = activeTrades.length > 0 ? Math.min(...activeTrades.map(t => t.pnl)) : 0;
 
             const pnlEl = document.getElementById('stat-pnl');
             pnlEl.textContent = `${totalPnL >= 0 ? '+' : ''}$${totalPnL.toFixed(2)}`;
@@ -904,7 +1144,7 @@
             document.getElementById('donutLoss').textContent = lossCount;
             document.getElementById('donutBep').textContent = beps.length;
 
-            updateChartsData(trades);
+            updateChartsData(activeTrades);
         }
 
         function initCharts() {
@@ -960,6 +1200,7 @@
 
             const sorted = [...tradesList].sort((a, b) => new Date(a.date) - new Date(b.date));
             let cumulative = 0;
+
             const labels = sorted.map((t, index) => `#${index + 1} ${t.pair}`);
             const dataPnL = sorted.map(t => {
                 cumulative += (t.pnl || 0);
@@ -979,8 +1220,9 @@
         }
 
         function renderAnalyticsCharts() {
+            const activeTrades = getFilteredTradesByAccount();
             const strategyMap = {};
-            trades.forEach(t => {
+            activeTrades.forEach(t => {
                 const setup = t.setup || 'Unassigned';
                 strategyMap[setup] = (strategyMap[setup] || 0) + (t.pnl || 0);
             });
@@ -1013,7 +1255,7 @@
             });
 
             const emotionMap = {};
-            trades.forEach(t => {
+            activeTrades.forEach(t => {
                 const emo = t.emotion || 'Disciplined';
                 if (!emotionMap[emo]) emotionMap[emo] = { wins: 0, total: 0 };
                 emotionMap[emo].total++;
@@ -1052,8 +1294,9 @@
         }
 
         function populateFilterOptions() {
-            const pairs = [...new Set(trades.map(t => t.pair.toUpperCase()))];
-            const setups = [...new Set(trades.map(t => t.setup).filter(Boolean))];
+            const activeTrades = getFilteredTradesByAccount();
+            const pairs = [...new Set(activeTrades.map(t => t.pair.toUpperCase()))];
+            const setups = [...new Set(activeTrades.map(t => t.setup).filter(Boolean))];
 
             const pairSelect = document.getElementById('filterPair');
             pairSelect.innerHTML = '<option value="ALL">Semua Pair</option>' + 
@@ -1068,8 +1311,9 @@
             const search = document.getElementById('searchInput').value.toLowerCase();
             const selectedPair = document.getElementById('filterPair').value;
             const selectedSetup = document.getElementById('filterSetup').value;
+            const activeTrades = getFilteredTradesByAccount();
 
-            const filtered = trades.filter(t => {
+            const filtered = activeTrades.filter(t => {
                 const matchSearch = t.pair.toLowerCase().includes(search) || (t.notes && t.notes.toLowerCase().includes(search));
                 const matchPair = selectedPair === 'ALL' || t.pair.toUpperCase() === selectedPair;
                 const matchSetup = selectedSetup === 'ALL' || t.setup === selectedSetup;
@@ -1093,10 +1337,16 @@
                 const pnlClass = isProfit ? 'text-emerald-400 font-bold' : (isLoss ? 'text-rose-400 font-bold' : 'text-gray-400');
                 const typeClass = t.type === 'LONG' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20';
 
+                const matchedAcc = accounts.find(a => a.id === (t.accountId || 'acc_default'));
+                const accName = matchedAcc ? matchedAcc.name : 'Akun Utama';
+
                 return `
                     <tr class="hover:bg-dark-700/40 transition border-b border-gray-800/60">
                         <td class="py-3 px-4 whitespace-nowrap text-xs text-gray-400">${formatDate(t.date)}</td>
-                        <td class="py-3 px-4 font-bold text-gray-100 uppercase">${t.pair}</td>
+                        <td class="py-3 px-4 font-bold text-gray-100 uppercase">
+                            <div>${t.pair}</div>
+                            ${currentAccountId === 'ALL' ? `<div class="text-[10px] text-blue-400 font-normal"><i class="fa-solid fa-wallet text-[9px] mr-1"></i>${accName}</div>` : ''}
+                        </td>
                         <td class="py-3 px-4 whitespace-nowrap">
                             <span class="px-2.5 py-1 text-xs font-semibold rounded-lg border ${typeClass}">${t.type}</span>
                         </td>
@@ -1172,6 +1422,7 @@
             e.preventDefault();
 
             const id = document.getElementById('tradeId').value || Date.now().toString();
+            const accountId = document.getElementById('fieldAccount').value || 'acc_default';
             const date = document.getElementById('fieldDate').value;
             const pair = document.getElementById('fieldPair').value.toUpperCase().trim();
             const type = document.getElementById('fieldType').value;
@@ -1193,7 +1444,7 @@
                 rr = risk > 0 ? parseFloat((reward / risk).toFixed(2)) : 0;
             }
 
-            const tradeObj = { id, date, pair, type, size, entry, exit, sl, pnl, rr, setup, emotion, notes };
+            const tradeObj = { id, accountId, date, pair, type, size, entry, exit, sl, pnl, rr, setup, emotion, notes };
 
             const existingIndex = trades.findIndex(t => t.id === id);
             if (existingIndex > -1) {
@@ -1217,6 +1468,7 @@
             if (!t) return;
 
             document.getElementById('tradeId').value = t.id;
+            document.getElementById('fieldAccount').value = t.accountId || 'acc_default';
             document.getElementById('fieldDate').value = t.date;
             document.getElementById('fieldPair').value = t.pair;
             document.getElementById('fieldType').value = t.type;
@@ -1268,34 +1520,42 @@
         }
 
         function exportData() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(trades, null, 2));
+            const backupData = {
+                accounts: accounts,
+                trades: trades
+            };
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData, null, 2));
             const downloadAnchor = document.createElement('a');
             downloadAnchor.setAttribute("href", dataStr);
             downloadAnchor.setAttribute("download", `TradeLog_Backup_${new Date().toISOString().slice(0, 10)}.json`);
             document.body.appendChild(downloadAnchor);
             downloadAnchor.click();
             downloadAnchor.remove();
-            showToast('Backup data berhasil di-download!');
+            showToast('Backup data akun & trade berhasil di-download!');
         }
 
         async function importData(event) {
             const fileReader = new FileReader();
             fileReader.onload = async function(e) {
                 try {
-                    const importedTrades = JSON.parse(e.target.result);
-                    if (Array.isArray(importedTrades)) {
-                        trades = importedTrades;
-                        saveTradesToLocalStorage();
-                        for (const item of importedTrades) {
-                            await saveTradeToCloud(item);
-                        }
-                        updateDashboard();
-                        populateFilterOptions();
-                        renderTrades();
-                        showToast('Data berhasil di-import & disinkron ke cloud!');
-                    } else {
-                        showToast('Format file JSON tidak valid!', 'error');
+                    const imported = JSON.parse(e.target.result);
+                    if (imported.accounts && imported.trades) {
+                        accounts = imported.accounts;
+                        trades = imported.trades;
+                    } else if (Array.isArray(imported)) {
+                        trades = imported;
                     }
+                    saveAccountsToLocalStorage();
+                    saveTradesToLocalStorage();
+
+                    for (const acc of accounts) await saveAccountToCloud(acc);
+                    for (const item of trades) await saveTradeToCloud(item);
+
+                    renderAccountOptions();
+                    updateDashboard();
+                    populateFilterOptions();
+                    renderTrades();
+                    showToast('Data akun & trade berhasil di-import & disinkron!');
                 } catch (err) {
                     showToast('Gagal membaca file JSON!', 'error');
                 }
@@ -1323,6 +1583,13 @@
         window.exportData = exportData;
         window.importData = importData;
         window.renderTrades = renderTrades;
+
+        /* Multi-Account global bindings */
+        window.switchActiveAccount = switchActiveAccount;
+        window.handleAccountFormSubmit = handleAccountFormSubmit;
+        window.editAccount = editAccount;
+        window.deleteAccount = deleteAccount;
+        window.resetAccountForm = resetAccountForm;
     </script>
 </body>
 </html>
